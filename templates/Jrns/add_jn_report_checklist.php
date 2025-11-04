@@ -97,8 +97,15 @@ function add_report_checklist()
      
  </script>   
  <?php
-    echo $this->Form->create('add_jn_checklist', array('controller' => 'Jnreports','name'=>"add_jn_checklist", 'id'=>"add_jn_checklist", 'method'=>'post','class'=>'adminform'));
- ?>
+    echo $this->Form->create(null, [
+        'url' => ['controller' => 'Jnreports', 'action' => 'addJnChecklist'],
+        'name' => 'add_jn_checklist',
+        'id' => 'add_jn_checklist',
+        'method' => 'post',
+        'class' => 'adminform'
+    ]);
+?>
+
 
  <h2><?php echo $heading; ?><span class="textcmpul">Field marked with * are compulsory  </span></h2>
  <br/>

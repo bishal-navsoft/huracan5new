@@ -137,9 +137,20 @@ function add_audit_attach()
      
   </script>   
     <?php
-    echo $this->Form->create('Audits', array('type'=>'file','id' => 'add_report_attachment_form','name'=>'add_report_attachment_form','class'=>'adminform'));
-    echo $this->Form->input('id', array('type'=>'hidden', 'id'=>'id', 'value'=>$attachment_id));
- ?>
+		echo $this->Form->create(null, [
+			'type' => 'file',
+			'id' => 'add_report_attachment_form',
+			'name' => 'add_report_attachment_form',
+			'class' => 'adminform'
+		]);
+
+		echo $this->Form->control('id', [
+			'type' => 'hidden',
+			'id' => 'id',
+			'value' => $attachment_id
+		]);
+	?>
+
 
  <h2><?php echo $heading; ?>&nbsp;&nbsp;(<?php echo $report_number; ?>)<span class="textcmpul">Field marked with * are compulsory  </span></h2>
  <br/>

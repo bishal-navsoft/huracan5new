@@ -73,7 +73,14 @@
 	        }
         }
   </script>
-  <?php echo $this->Form->create('add_report_investigation_form', array('controller' => 'Reports','name'=>"add_report_investigation_form", 'id'=>"add_report_investigation_form", 'method'=>'post','class'=>'investigation'));
+  <?php echo $this->Form->create(null, [
+            'url' => ['controller' => 'Reports', 'action' => 'addReportInvestigation'],
+            'name' => 'add_report_investigation_form',
+            'id' => 'add_report_investigation_form',
+            'method' => 'post',
+            'class' => 'investigation'
+        ]);
+
         echo $this->Element('investigation_element');
   ?>    
    

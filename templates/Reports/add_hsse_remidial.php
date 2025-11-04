@@ -28,8 +28,19 @@
   </script>   
 
 <?php 
-    echo $this->Form->create('add_report_remidial_form', array('controller' => 'Reports','name'=>"add_report_remidial_form", 'id'=>"add_report_remidial_form", 'method'=>'post','class'=>'adminform'));
-    echo $this->Form->input('id', array('type'=>'hidden', 'id'=>'id', 'value'=>$id));
+    echo $this->Form->create(null, [
+        'url' => ['controller' => 'Reports', 'action' => 'addReportRemidial'],
+        'name' => 'add_report_remidial_form',
+        'id' => 'add_report_remidial_form',
+        'method' => 'post',
+        'class' => 'adminform'
+    ]);
+
+    echo $this->Form->control('id', [
+        'type' => 'hidden',
+        'id' => 'id',
+        'value' => $id
+    ]);
  ?>
 
  <h2><?php echo $heading; ?>&nbsp;&nbsp;<?php echo $report_number; ?><span class="textcmpul">Field marked with * are compulsory  </span></h2>

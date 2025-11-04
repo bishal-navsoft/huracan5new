@@ -61,7 +61,7 @@ class ReportsController extends AppController
     public IncidentSubCategoryTable $IncidentSubCategory;
     public PriorityTable $Priority;
     public HsseRemidialTable $HsseRemidial;
-    public RemidialEmailList $RemidialEmailList;
+    public RemidialEmailListTable $RemidialEmailList;
 
     public function initialize(): void
     {
@@ -98,14 +98,14 @@ class ReportsController extends AppController
     // public $helpers = array('Html','Form','Session','Js');
     // public $components = array('RequestHandler', 'Cookie', 'Resizer');
 
-    public function reportHsseList()
+    /*public function reportHsseList()
     {
         $this->_checkAdminSession(); // assuming this exists in AppController
         $this->_getRoleMenuPermission(); // legacy helper method
         $this->grid_access();
         $this->report_hsse_link();
         $this->viewBuilder()->setLayout("after_adminlogin_template");
-        // debug($this->viewBuilder()->getTemplate());
+        dd($this->viewBuilder()->getTemplate());
 
         // To print the layout being used:
         // debug($this->viewBuilder()->getLayout());
@@ -164,37 +164,102 @@ class ReportsController extends AppController
         $session->write("idBollen", $idBoolen);
 
         $this->set("reports", $reports);
+    }*/
+    public function reportHsseList(): void
+    {
+        // Ensure session and permissions
+        $this->_checkAdminSession(); 
+        $this->_getRoleMenuPermission();
+        $this->grid_access();
+        $this->report_hsse_link();
+
+        // Use correct layout
+        $this->viewBuilder()->setLayout('after_adminlogin_template');
+        //dd($this->viewBuilder()->getTemplate());
+        // Get session
+        $session = $this->request->getSession();
+
+        // Read any POST/GET data safely
+        $data = $this->request->getData() ?: [];
+        //dd($data);
+        // Default values
+        $limit = $data['Report']['limit'] ?? 50;
+        $action = $data['Report']['action'] ?? 'all';
+
+        // Store some parameters in session
+        $session->write('limit', $limit);
+        $session->delete('filter');
+        $session->delete('value');
+        $session->delete('idBollen');
+
+        // Query reports
+        $reports = $this->Reports->find()
+            ->where(['Reports.isdeleted' => 'N'])
+            ->order(['Reports.id' => 'DESC'])
+            ->limit($limit)
+            ->all();
+        //dd($reports);
+        // Handle admin session data (object or array)
+        $adminData = $session->read('adminData');
+
+        $idBoolean = [];
+        foreach ($reports as $report) {
+            $createdBy = $report->created_by ?? null;
+            $isSuperAdmin = false;
+            $adminId = null;
+            $roleId = null;
+
+            // Handle both entity or array structures safely
+            if (is_array($adminData)) {
+                $adminId = $adminData['AdminMaster']['id'] ?? null;
+                $roleId = $adminData['RoleMaster']['id'] ?? null;
+            } elseif (is_object($adminData)) {
+                $adminId = $adminData->id ?? null;
+                $roleId = $adminData->role_master_id ?? null;
+            }
+
+            // Check permissions
+            if ($adminId == $createdBy || $roleId == 1) {
+                $idBoolean[] = 1;
+            } else {
+                $idBoolean[] = 0;
+            }
+        }
+
+        // Store result
+        $session->write('idBollen', $idBoolean);
+
+        // Pass variables to view
+        $this->set(compact('limit', 'action', 'reports'));
     }
+
 
     public function getAllReport($action = "all")
     {
         $this->request->allowMethod(["get", "post"]);
         $this->viewBuilder()->setLayout("ajax");
+        $this->autoRender = false;
 
         // Get session
         $session = $this->request->getSession();
 
-        if (!$session->check("admin_id")) {
-            $this->set([
+        if (!$session->check("adminData")) {
+            $data = [
                 "admins" => [],
                 "total" => 0,
                 "status" => "error",
                 "message" => "Session expired",
                 "_serialize" => ["admins", "total", "status", "message"],
-            ]);
-            return;
+            ];
+            return $this->response->withType('application/json')->withStringBody(json_encode($data));
         }
 
-        $adminData = $session->read();
-        $loggedInAdminId = isset($adminData["AdminMaster"]["id"])
-            ? $adminData["AdminMaster"]["id"]
-            : null;
-        $loggedInRoleId = isset($adminData["RoleMaster"]["id"])
-            ? $adminData["RoleMaster"]["id"]
-            : null;
+        $adminData = $session->read('adminData') ?? [];
+        $loggedInAdminId = $adminData['id'] ?? null;
+        $loggedInRoleId = $adminData['RoleMaster']['id'] ?? null;
 
         $condition = ["Reports.isdeleted" => "N"];
-
+        //dd($condition);
         // Filtering
         $filter = $this->request->getQuery("filter");
         $value = $this->request->getQuery("value");
@@ -267,20 +332,27 @@ class ReportsController extends AppController
             ->find()
             ->where($condition)
             ->count();
-
+        //dd($total);
+        // dd([
+        //     'limit' => $limit,
+        //     'start' => $start
+        // ]);
         // Query for paginated results
         $reports = $this->Reports
             ->find()
-            ->contain([
-                "Clients",
-                "AdminMasters",
-                "IncidentSeverities",
-                "HsseRemidials",
-            ])
+             ->contain([
+                 "Clients",
+                 "AdminMasters",
+                 "IncidentSeverities",
+                 "HsseRemidials",
+             ])
             ->where($condition)
             ->order(["Reports.id" => "DESC"])
+            ->limit($limit)
+            ->offset($start)
             ->all();
-
+        //debug($reports->sql());
+        //dd($reports->count());
         $adminArray = [];
         $idBoolean = [];
 
@@ -305,9 +377,7 @@ class ReportsController extends AppController
             }
 
             // Format event date
-            $eventDate = $rec->event_date
-                ? FrozenTime::parse($rec->event_date)->format("d/M/y")
-                : "";
+            $eventDate = !empty($rec->event_date) ? (new FrozenTime($rec->event_date))->format('d/M/y') : '';
 
             // Incident severity safe access
             $incidentSeverity = "";
@@ -333,7 +403,7 @@ class ReportsController extends AppController
 
             // Remidials counting
             $remidial_close = $remidial_open = [];
-            foreach ($rec->hsse_remidials as $r) {
+            foreach ((array)$rec->hsse_remidials as $r) {
                 if ($r->remidial_closure_date !== "0000-00-00") {
                     $remidial_close[] = $r->id;
                 } else {
@@ -377,13 +447,17 @@ class ReportsController extends AppController
 
         $_SESSION["idBollen"] = $idBoolean;
 
-        $this->set([
+        $responseData = [
             "admins" => $adminArray,
             "total" => $total,
             "status" => $action,
             "idBollen" => $idBoolean,
             "_serialize" => ["admins", "total", "status", "idBollen"],
-        ]);
+        ];
+        return $this->response
+            ->withType('application/json')
+            ->withStringBody(json_encode($responseData));
+        
     }
 
     public function reportBlock($id = null): void
@@ -480,20 +554,11 @@ class ReportsController extends AppController
         $this->grid_access();
         $this->_getRoleMenuPermission();
         // Load all necessary data
-        $incidentDetail = $this->Incident
-            ->find()
-            ->where(["incident_type" => "hsse"])
-            ->all();
-        $businessDetail = $this->BusinessType
-            ->find()
-            ->where(["rtype" => "all"])
-            ->all();
+        $incidentDetail = $this->Incident->find()->where(["incident_type" => "hsse"])->all();
+        $businessDetail = $this->BusinessType->find()->where(["rtype" => "all"])->all();
         $fieldlocationDetail = $this->Fieldlocation->find()->all();
         $clientDetail = $this->Client->find()->all();
-        $incidentSeverityDetail = $this->IncidentSeverity
-            ->find()
-            ->where(["servrity_type" => "ssh"])
-            ->all();
+        $incidentSeverityDetail = $this->IncidentSeverity->find()->where(["servrity_type" => "ssh"])->all();
         $residualDetail = $this->Residual->find()->all();
         $potentialDetail = $this->Potential->find()->all();
         $countryDetail = $this->Country->find()->all();
@@ -523,18 +588,33 @@ class ReportsController extends AppController
                 ->where(["report_id" => $decodedId])
                 ->first();
             if ($clientDetailHsse) {
-                $clientFeedback =
-                    $clientDetailHsse->clientreviewed == 3 ? 1 : 0;
+                $clientFeedback = ($clientDetailHsse->clientreviewed == 3) ? 1 : 0;
             }
         }
         $this->set("client_feedback", $clientFeedback);
 
         $session = $this->request->getSession();
+        $adminData = $session->read("adminData");
+
+        // Ensure adminData exists in session
+        if (empty($adminData)) {
+            // You might fetch logged-in admin data from DB or Auth here
+            $defaultAdmin = $this->AdminMasters->find()->first();
+            if ($defaultAdmin) {
+                $adminData = [
+                    "AdminMaster" => ["id" => $defaultAdmin->id],
+                    "RoleMaster" => ["id" => 1], // default to admin if unsure
+                    "first_name" => $defaultAdmin->first_name,
+                    "last_name" => $defaultAdmin->last_name,
+                ];
+                $session->write("adminData", $adminData);
+            }
+        }
+
         // If no ID — Add new report
         if ($decodedId === null) {
-            $adminData = $session->read("adminData");
-            $adminName =
-                $adminData["first_name"] . " " . $adminData["last_name"];
+            
+            $adminName = $adminData["first_name"] . " " . $adminData["last_name"];
             $reportNo = date("YmdHis");
 
             $this->set([
@@ -574,19 +654,31 @@ class ReportsController extends AppController
             $this->Flash->error(__("Report not found."));
             return $this->redirect(["action" => "index"]);
         }
-
+        // Write session values safely
         $session->write("report_create", $reportDetail->created_by);
-        $clientTab = $reportDetail->client == 9 ? 0 : 1;
+        $clientTab = ($reportDetail->client == 9) ? 0 : 1;
+        $session->write("clienttab", $clientTab);
         $this->set("clienttab", $clientTab);
         $adminData = $this->AdminMasters->get($reportDetail->created_by);
         // Format dates from Y-m-d to d-m-Y
         $formatDate = function ($date) {
-            if (!empty($date) && strpos($date, "-") !== false) {
+            if (empty($date)) {
+                return "";
+            }
+
+            // If it's a Cake\I18n\Date or DateTime object
+            if ($date instanceof \Cake\I18n\Date || $date instanceof \DateTimeInterface) {
+                return $date->format("d-m-Y");
+            }
+
+            // Otherwise, assume it's a string like "YYYY-MM-DD"
+            if (is_string($date) && strpos($date, "-") !== false) {
                 $parts = explode("-", $date);
                 if (count($parts) === 3) {
                     return "{$parts[2]}-{$parts[1]}-{$parts[0]}";
                 }
             }
+
             return "";
         };
 
@@ -1704,7 +1796,7 @@ class ReportsController extends AppController
             ->where(['AdminMasters.isdeleted' => 'N', 'AdminMasters.isblocked' => 'N'])
             ->contain(['RoleMasters'])
             ->all();
-
+        //debug($userDetails);
         foreach ($userDetails as $user) {
             $modifiedDate = $user->modified;
             $user->user_seniority = $modifiedDate->format('d/m/Y');
@@ -1716,6 +1808,7 @@ class ReportsController extends AppController
         }else{
             $userDetailsarr = [];
         }
+        //debug($userDetailsarr);
         $this->set('userDetail', $userDetailsarr);
         
         // Get report detail

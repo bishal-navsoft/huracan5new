@@ -24,8 +24,6 @@ class AdminMastersTable extends Table
             'foreignKey' => 'role_master_id',
             'joinType' => 'INNER',
         ]);
-
-
     }
 
     public function validationDefault(Validator $validator): Validator

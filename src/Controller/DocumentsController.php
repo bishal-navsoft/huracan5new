@@ -39,7 +39,7 @@ class DocumentsController extends AppController
         $this->loadModel('Client');
         $this->loadModel('Country');
         $this->loadModel('RolePermission');
-        $this->loadModel('RoleMasters');
+        //$this->loadModel('RoleMasters');
         $this->loadModel('AdminMenu');
         $this->viewBuilder()->setLayout('after_adminlogin_template');
     }

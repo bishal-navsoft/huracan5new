@@ -1,169 +1,166 @@
 Ext.onReady(function(){
 
-function onFilterItemCheck(item, checked){
+	function onFilterItemCheck(item, checked){
         if(checked) {
             Ext.get('filterlabel').update('['+item.text+']');    
         }
     }
- 
- 
-function checkboxAction(){
-}
 
-//Function for unblock selected records
-function delete_hsse_report_main(id){
-	if(confirm("Do You Want To Delete?"))
-	  {
-		$.ajax({
-				type: "POST",
-				url: path+"Reports/main_delete/",
-				data:"id="+id,
-				success: function(res)
-				{	      
-				   if(res=='ok'){
-					 document.location=path+'Reports/report_hsse_list';
-				       }
-				   }
-		      });
-	  }else{
-		return  false;
-	  }
-}
+	function checkboxAction(){
+	}
 
-function unblockSelected()
-{
-	var selectedArray = new Array();
-    selectedArray = checkBox.getSelections();
-	if(selectedArray.length == 0)
-	{
-		return false;
-	}	
-
-	if(is_block == 1)
-	{
-		Ext.Msg.show({
-				title:activ_select_record
-			       ,msg:activate_select_record + '</b><br/>.'
-			       ,icon:Ext.Msg.QUESTION
-			       ,buttons:Ext.Msg.YESNO
-			       ,scope:this
-			       ,fn:function(response) {
-				       	if('yes' !== response) {
-					       	return;
-				       	}
-				       	else
-				       	{
-							var box = Ext.MessageBox.wait(please_wait, performing_actions);
-							var selectedIds = "";
-							for(var i=0; i<selectedArray.length; i++)
-					       	{
-						       if(i==0)
-						       {
-							       selectedIds = selectedArray[i]["data"]["id"];
-						       }else
-						       {
-							       selectedIds = selectedIds+"^"+selectedArray[i]["data"]["id"];
-						       }						
-						    }
-					       	Ext.Ajax.request(
-							{
-								url: path+'Reports/report_unblock/'+selectedIds+'/'
-								,method:'GET'
-								,success: function(response){
-										ds.reload({
-											params: ds.lastOptions.params
-										});
-										box.hide();
-									}
-									,failure: function(response){
-										box.hide();
-										Ext.Msg.alert(err, err_unblock);
-										
-										//ds.load();
-									}
-									,scope: this
-							})
+	//Function for unblock selected records
+	function delete_hsse_report_main(id){
+		if(confirm("Do You Want To Delete?"))
+		{
+			$.ajax({
+					type: "POST",
+					url: path+"Reports/main_delete/",
+					data:"id="+id,
+					success: function(res)
+					{	      
+					if(res=='ok'){
+						document.location=path+'Reports/report_hsse_list';
 						}
-						//console.info('Deleting record');
-			       	}
+					}
 				});
-	
+		}else{
+			return  false;
+		}
 	}
-	else
-	{
-		Ext.Msg.alert(warning,not_allowed_access);
-	}	
-	
-}	
 
-function blockSelected()
-{
-	var selectedArray = new Array();
-    selectedArray = checkBox.getSelections();
-	if(selectedArray.length == 0)
+	function unblockSelected()
 	{
-		alert(select_one_record);
-		return false;
-	}
-	if(is_block == 1)
-	{
-		Ext.Msg.show({
-					title:deactiv_select_record
-				       ,msg:deactivate_select_record + '</b><br/>.'
-				       ,icon:Ext.Msg.QUESTION
-				       ,buttons:Ext.Msg.YESNO
-				       ,scope:this
-				       ,fn:function(response) {
-					       if('yes' !== response) {
-						       return;
-					       }
-					       else
-					       {
-						       	var box = Ext.MessageBox.wait(please_wait, performing_actions);										
-							   	var selectedIds = "";
-						       	for(var i=0; i<selectedArray.length; i++)
-						       	{
-							       	if(i==0)
-							       	{
-								       selectedIds = selectedArray[i]["data"]["id"];
-							       	}else
-							       	{
-								       selectedIds = selectedIds+"^"+selectedArray[i]["data"]["id"];
-							       	}						
-							    }
-						       	Ext.Ajax.request(
+		var selectedArray = new Array();
+		selectedArray = checkBox.getSelections();
+		if(selectedArray.length == 0)
+		{
+			return false;
+		}	
+
+		if(is_block == 1)
+		{
+			Ext.Msg.show({
+					title:activ_select_record
+					,msg:activate_select_record + '</b><br/>.'
+					,icon:Ext.Msg.QUESTION
+					,buttons:Ext.Msg.YESNO
+					,scope:this
+					,fn:function(response) {
+							if('yes' !== response) {
+								return;
+							}
+							else
+							{
+								var box = Ext.MessageBox.wait(please_wait, performing_actions);
+								var selectedIds = "";
+								for(var i=0; i<selectedArray.length; i++)
 								{
-									url: path+'Reports/report_block/'+selectedIds+'/'
+								if(i==0)
+								{
+									selectedIds = selectedArray[i]["data"]["id"];
+								}else
+								{
+									selectedIds = selectedIds+"^"+selectedArray[i]["data"]["id"];
+								}						
+								}
+								Ext.Ajax.request(
+								{
+									url: path+'Reports/report_unblock/'+selectedIds+'/'
 									,method:'GET'
 									,success: function(response){
-										ds.reload({
-											params: ds.lastOptions.params
-										});
-										box.hide();
+											ds.reload({
+												params: ds.lastOptions.params
+											});
+											box.hide();
 										}
 										,failure: function(response){
 											box.hide();
-											Ext.Msg.alert(err, err_block);
+											Ext.Msg.alert(err, err_unblock);
 											
 											//ds.load();
 										}
 										,scope: this
-											
 								})
 							}
-	       					//console.info('Deleting record');
-				       	}
+							//console.info('Deleting record');
+						}
 					});
-	}
-	else
+		}
+		else
+		{
+			Ext.Msg.alert(warning,not_allowed_access);
+		}	
+		
+	}	
+
+	function blockSelected()
 	{
-		Ext.Msg.alert(warning,not_allowed_access);
-	}			
-}
+		var selectedArray = new Array();
+		selectedArray = checkBox.getSelections();
+		if(selectedArray.length == 0)
+		{
+			alert(select_one_record);
+			return false;
+		}
+		if(is_block == 1)
+		{
+			Ext.Msg.show({
+						title:deactiv_select_record
+						,msg:deactivate_select_record + '</b><br/>.'
+						,icon:Ext.Msg.QUESTION
+						,buttons:Ext.Msg.YESNO
+						,scope:this
+						,fn:function(response) {
+							if('yes' !== response) {
+								return;
+							}
+							else
+							{
+									var box = Ext.MessageBox.wait(please_wait, performing_actions);										
+									var selectedIds = "";
+									for(var i=0; i<selectedArray.length; i++)
+									{
+										if(i==0)
+										{
+										selectedIds = selectedArray[i]["data"]["id"];
+										}else
+										{
+										selectedIds = selectedIds+"^"+selectedArray[i]["data"]["id"];
+										}						
+									}
+									Ext.Ajax.request(
+									{
+										url: path+'Reports/report_block/'+selectedIds+'/'
+										,method:'GET'
+										,success: function(response){
+											ds.reload({
+												params: ds.lastOptions.params
+											});
+											box.hide();
+											}
+											,failure: function(response){
+												box.hide();
+												Ext.Msg.alert(err, err_block);
+												
+												//ds.load();
+											}
+											,scope: this
+												
+									})
+								}
+								//console.info('Deleting record');
+							}
+						});
+		}
+		else
+		{
+			Ext.Msg.alert(warning,not_allowed_access);
+		}			
+	}
 
 	function deleteSelected()
 	{
-
 		var selectedArray = new Array();
 		selectedArray = checkBox.getSelections();
 		if(selectedArray.length == 0)
@@ -197,22 +194,12 @@ function blockSelected()
 									{
 										selectedIds = selectedIds+"^"+selectedArray[i]["data"]["id"];
 									}						
-									
-									
-
 								}
-							
-										delete_hsse_report_main(selectedIds);
-
-								
-								
-												
-								
+								delete_hsse_report_main(selectedIds);
 							}
-			//              console.info('Deleting record');
+							// console.info('Deleting record');
 						}
-		});
-						
+			});
 		}
 		else
 		{
@@ -228,35 +215,35 @@ function blockSelected()
         'X-CSRF-Token': csrfToken}, method: 'GET'}),
 		//note that I used host in the url
 		reader: new Ext.data.JsonReader({
-        root: 'admins',
-		totalProperty: 'total',
-        remoteSort: true,
-		fields: [
-			{name: 'id'},
-			{name: 'report_no'},
-			{name: 'event_date'},
-			{name: 'closer_date'},
-        	{name: 'event_date'},
-			{name: 'event_date_val'},
-			{name: 'client'},
-			{name: 'incident_severity'},
-			{name: 'incident_severity_name'},
-			{name: 'client_name'},
-			{name: 'creater_name'},
-			{name: 'remidial'},
-			{name: 'summary'},
-			{name: 'isblocked'},
-			{name: 'edit_permit',type: 'boolean'},
-			{name: 'view_permit',type: 'boolean'},
-			{name: 'delete_permit',type: 'boolean'},
-			{name: 'block_permit',type: 'boolean'},
-			{name: 'unblock_permit',type: 'boolean'},
-			{name: 'blockHideIndex', type: 'boolean'},
-			{name: 'unblockHideIndex', type: 'boolean'},
-			{name: 'isdeletdHideIndex', type: 'boolean'}, 
-			{name: 'checkbox_permit', type: 'boolean'},
-		]
-	})
+			root: 'admins',
+			totalProperty: 'total',
+			remoteSort: true,
+			fields: [
+				{name: 'id'},
+				{name: 'report_no'},
+				{name: 'event_date'},
+				{name: 'closer_date'},
+				{name: 'event_date'},
+				{name: 'event_date_val'},
+				{name: 'client'},
+				{name: 'incident_severity'},
+				{name: 'incident_severity_name'},
+				{name: 'client_name'},
+				{name: 'creater_name'},
+				{name: 'remidial'},
+				{name: 'summary'},
+				{name: 'isblocked'},
+				{name: 'edit_permit',type: 'boolean'},
+				{name: 'view_permit',type: 'boolean'},
+				{name: 'delete_permit',type: 'boolean'},
+				{name: 'block_permit',type: 'boolean'},
+				{name: 'unblock_permit',type: 'boolean'},
+				{name: 'blockHideIndex', type: 'boolean'},
+				{name: 'unblockHideIndex', type: 'boolean'},
+				{name: 'isdeletdHideIndex', type: 'boolean'}, 
+				{name: 'checkbox_permit', type: 'boolean'},
+			]
+		})
     });  
 	
 	var pagingBar = new Ext.PagingToolbar({
@@ -270,28 +257,26 @@ function blockSelected()
 
 	var strListVal =listVal.split(',');
 	var checkBox = new Ext.grid.CheckboxSelectionModel({
-		
-	renderer: function(v, p, record, rowIndex){
-		var j = strListVal[rowIndex];
-		if(j==1)
-		{
-			return '<div class="x-grid3-row-checker">&#160;</div>';
-		}
+		renderer: function(v, p, record, rowIndex){
+			var j = strListVal[rowIndex];
+			if(j==1)
+			{
+				return '<div class="x-grid3-row-checker">&#160;</div>';
+			}
 
-		},
-		selectAll: function(){
-			var rowIndex=0;
-		       while(typeof(this.grid.getStore().getAt(rowIndex))!='undefined') {
-			var record = this.grid.getStore().getAt(rowIndex);
-			 var j = strListVal[rowIndex];
-			 if(j==1){
-	 			this.grid.getSelectionModel().deselectRow(rowIndex, true);
-				this.grid.getSelectionModel().selectRow(rowIndex, true);
-			 }
-			    
-	 		rowIndex++;		
-		}
-		}
+			},
+			selectAll: function(){
+				var rowIndex=0;
+					while(typeof(this.grid.getStore().getAt(rowIndex))!='undefined') {
+						var record = this.grid.getStore().getAt(rowIndex);
+						var j = strListVal[rowIndex];
+						if(j==1){
+							this.grid.getSelectionModel().deselectRow(rowIndex, true);
+							this.grid.getSelectionModel().selectRow(rowIndex, true);
+						}
+						rowIndex++;		
+					}
+			}
 	});
  
 	//var checkBox='';
@@ -430,7 +415,6 @@ function blockSelected()
 		if(val == "N"){ return act;}		
 		else{ return inact;}
 	}
-	
 	
     //This is the column model.  This defines the columns in my datagrid.
     //It also maps each column with the appropriate json data from my database (dataIndex).

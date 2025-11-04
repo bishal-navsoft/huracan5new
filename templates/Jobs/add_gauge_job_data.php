@@ -79,13 +79,20 @@ function add_gyro_data()
       </script>
      
      <?php
-        
+     echo $this->Form->create(null, [
+        'url' => ['controller' => 'Jobs', 'action' => 'add_gaugejob'],
+        'name' => 'add_gaugejob_form',
+        'id' => 'add_gaugejob_form',
+        'method' => 'post',
+        'class' => 'adminform'
+    ]);
 
-   
+    echo $this->Form->control('id', [
+        'type' => 'hidden',
+        'id' => 'id',
+        'value' => $id
+    ]);
 
-
-    echo $this->Form->create('add_gaugejob_form', array('controller' => 'Jobs','name'=>"add_gaugejob_form", 'id'=>"add_gaugejob_form", 'method'=>'post','class'=>'adminform'));
-    echo $this->Form->input('id', array('type'=>'hidden', 'id'=>'id', 'value'=>$id));
  ?>
 
  <h2><?php echo $heading; ?><span class="textcmpul">Field marked with * are compulsory  </span></h2>

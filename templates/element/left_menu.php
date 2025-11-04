@@ -13,8 +13,6 @@
 	      
 	   });
     
-    
-    
     function change_main_dirction(tabval){
           switch(tabval){
             case'createhsse':
@@ -86,9 +84,7 @@
 	    case'jha_list':
             document.location="<?php echo $this->webroot; ?>Jhas/jha_main_list";
             break;
-          }
-        
-        
+          }   
     }
     
 </script>

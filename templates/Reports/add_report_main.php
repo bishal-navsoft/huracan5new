@@ -9,7 +9,7 @@
     echo $this->Form->create(null, [
         'url' => ['controller' => 'Reports', 'action' => 'addReportMain'],
         'id' => 'add_report_main_form',
-        'type' => 'post',
+        'method' => 'post',
         'class' => 'adminform'
     ]);
 

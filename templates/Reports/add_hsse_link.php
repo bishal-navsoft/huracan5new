@@ -128,7 +128,12 @@
     <?php
     //echo '<pre>';
     //print_r($reportDeatil);
-    echo $this->Form->create('Report', array('type'=>'file','id' => 'add_report_link_form','name'=>'add_report_link_form','class'=>'adminform'));
+    echo $this->Form->create(null, [
+        'type' => 'file',
+        'id' => 'add_report_link_form',
+        'name' => 'add_report_link_form',
+        'class' => 'adminform'
+    ]);
 
     
     

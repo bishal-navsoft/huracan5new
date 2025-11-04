@@ -130,7 +130,14 @@ function redirectProject(){
 
 </div>
 <h2>General<span class="textcmpul">Field marked with * are compulsory  </span></h2>
-<?php echo $this->Form->create('RoleMaster', array('name'=>'rollmasterform','id'=>'rollmasterform','method'=>'post','class'=>'adminform'));?>
+<?php 
+	echo $this->Form->create(null, [
+		'name'   => 'rollmasterform',
+		'id'     => 'rollmasterform',
+		'method' => 'post',
+		'class'  => 'adminform'
+	]);
+?>
 <div class="clearflds"></div>
 <label>Name<span>*</span></label>
 <?PHP echo $this->Form->input('role_name', array('id'=>'role_name','type' =>'text', 'value'=>$roleName, 'label' => false,'div' => false)); ?><span class="textcmpul" id="role_name_error"></span>

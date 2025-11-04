@@ -128,8 +128,19 @@ function add_sg_attach()
 
 <h2><?php echo $heading; ?> &nbsp; <?php echo $report_number; ?></h2>
   <?php
-    echo $this->Form->create('Suggestions', array('type'=>'file','id' => 'add_report_attachment_form','name'=>'add_report_attachment_form','class'=>'adminform'));
-    echo $this->Form->input('id', array('type'=>'hidden', 'id'=>'id', 'value'=>$attachment_id));
+    echo $this->Form->create(null, [
+		'url' => ['controller' => 'Suggestions', 'action' => 'addReportAttachment'], // adjust action name if needed
+		'type' => 'file',  // enables file uploads
+		'id' => 'add_report_attachment_form',
+		'class' => 'adminform'
+	]);
+
+	echo $this->Form->control('id', [
+		'type' => 'hidden',
+		'id' => 'id',
+		'value' => $attachment_id ?? null,
+		'label' => false
+	]);
  ?>
 <label>Description</label>
 <?PHP echo $this->Form->input('attachment_description', array('type'=>'text', 'id'=>'attachment_description','name'=>'attachment_description','value'=>$description,'label' => false, 'class'=>'textclass', 'div' => false)); ?><span class="textcmpul" id="description_error"></span>

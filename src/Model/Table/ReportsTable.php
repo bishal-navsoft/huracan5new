@@ -21,16 +21,21 @@ class ReportsTable extends Table
 
         // Associations
         $this->belongsTo('IncidentSeverities', [
+            'className' => 'App\Model\Table\IncidentSeverityTable',
             'foreignKey' => 'incident_severity',
             'joinType' => 'LEFT',
+            'propertyName' => 'incident_severity_data',
         ]);
 
         $this->belongsTo('Clients', [
-            'foreignKey' => 'client',
+            'className' => 'App\Model\Table\ClientTable',
+            'foreignKey' => 'client', 
             'joinType' => 'LEFT',
+            'propertyName' => 'client_data',
         ]);
 
         $this->belongsTo('AdminMasters', [
+            'className' => 'App\Model\Table\AdminMastersTable',
             'foreignKey' => 'created_by',
             'joinType' => 'LEFT',
         ]);
@@ -65,24 +70,29 @@ class ReportsTable extends Table
             'joinType' => 'LEFT',
         ]);
 
-        $this->hasMany('HsseRemidials', [
+        $this->belongsTo('HsseRemidials', [
+            'className' => 'App\Model\Table\HsseRemidialTable',
             'foreignKey' => 'report_no',
             'bindingKey' => 'id',
         ]);
 
         $this->hasMany('HsseClients', [
+            'className' => 'App\Model\Table\HsseClientTable',
             'foreignKey' => 'report_id',
         ]);
 
         $this->hasMany('HsseIncidents', [
+            'className' => 'App\Model\Table\HsseIncidentTable',
             'foreignKey' => 'report_id',
         ]);
 
         $this->hasMany('HssePersonnels', [
+            'className' => 'App\Model\Table\HssePersonnelsTable',
             'foreignKey' => 'report_id',
         ]);
 
         $this->hasMany('HsseAttachments', [
+            'className' => 'App\Model\Table\HsseAttachmentTable',
             'foreignKey' => 'report_id',
         ]);
     }

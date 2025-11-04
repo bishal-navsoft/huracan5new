@@ -646,7 +646,7 @@ class AdminMastersController extends AppController
         $action = $this->request->getParam('action');
         $session = $this->request->getSession();
         $roleId = $session->read('adminData.AdminMaster.role_master_id');
-
+        dd($roleId);
         // derive url pattern used in original code
         $urlLike = $controller . '/' . $action;
         if (in_array($controller, ['Reports','Sqreports','Jrns','Audits','Jobs','Lessons','Certifications','Documents','Suggestions','Jhas'])) {
@@ -656,8 +656,8 @@ class AdminMastersController extends AppController
             $urlLike = 'RoleMasters/list_roles';
         }
 
-        $this->loadModel('RolePermissions');
-        $this->loadModel('AdminMenus');
+        $this->RolePermissions = $this->fetchTable('RolePermissions');
+        $this->AdminMenus = $this->fetchTable('AdminMenus');
 
         $roleMenuData = $this->RolePermissions->find()
             ->contain(['AdminMenus'])

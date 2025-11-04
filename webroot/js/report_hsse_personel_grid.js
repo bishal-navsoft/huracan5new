@@ -1,45 +1,40 @@
 Ext.onReady(function(){
 // CUSTOM FUNCTIONS //
 
-function onFilterItemCheck(item, checked){
-        if(checked) {
-            Ext.get('filterlabel').update('['+item.text+']');    
-        }
-    }
+function onFilterItemCheck(item, checked)
+{
+	if(checked) {
+		Ext.get('filterlabel').update('['+item.text+']');    
+	}
+}
 
 //Function for unblock selected records
-function delete_personel(id){
-	if (!confirm("Do you really want to delete this personnel?")) {
-        return; // user canceled
-    }
-	$.ajax({
-    url: path + "Reports/personnel_delete/",
-    type: "POST", // Use POST if you want CSRF protection
-    headers: {
-        'X-CSRF-Token': csrfToken
-    },
-    data: { 
-        data: 'a', 
-        id: id 
-    },
-    success: function(res) {
-        if (res === 'ok') {
-            window.location = path + 'Reports/report_hsse_perssonel_list/' + report_val;
+
+function delete_personel(id)
+{
+    if (!confirm("Do you really want to delete this personnel?")) return;
+
+    $.ajax({
+        url: path + "Reports/personnel_delete/",
+        type: "POST",
+        headers: {
+            "X-CSRF-Token": csrfToken
+        },
+        data: { id: id },
+        success: function(res) {
+            if (res === 'ok') {
+                window.location = path + 'Reports/report_hsse_perssonel_list/' + report_val;
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('AJAX Error:', status, error);
+            alert('Error deleting personnel.');
         }
-    },
-    error: function(xhr, status, error) {
-        console.error('AJAX Error:', status, error);
-        alert('Error deleting personnel.');
-    }
-});
-	
-	
-	
-	
+    });
 }
+
 function unblockSelected()
 {
-						
 	var selectedArray = new Array();
     selectedArray = checkBox.getSelections();
 	if(selectedArray.length == 0)
@@ -51,62 +46,54 @@ function unblockSelected()
 	if(is_block == 1)
 	{
 		Ext.Msg.show({
-				title:activ_select_record
-			       ,msg:activate_select_record + '</b><br/>.'
-			       ,icon:Ext.Msg.QUESTION
-			       ,buttons:Ext.Msg.YESNO
-			       ,scope:this
-			       ,fn:function(response) {
-				       if('yes' !== response) {
-					       return;
-				       }
-				       else
-				       {
-					       var box = Ext.MessageBox.wait(please_wait, performing_actions);
-					       var selectedIds = "";
-					       for(var i=0; i<selectedArray.length; i++)
-					       {
-						       if(i==0)
-						       {
-							       selectedIds = selectedArray[i]["data"]["id"];
-						       }else
-						       {
-							       selectedIds = selectedIds+"^"+selectedArray[i]["data"]["id"];
-						       }						
-						       
-						       
-	
-					       }
-					       Ext.Ajax.request(
-										       {
-													url: path+'Reports/personnel_unblock/'+selectedIds+'/'
-													,method:'GET'
-													,success: function(response){
-													       ds.reload();
-													       box.hide();
-												       }
-												       ,failure: function(response){
-													       box.hide();
-													       Ext.Msg.alert(err, err_unblock);
-													       
-													       //ds.load();
-												       }
-												       ,scope: this
-															
-										       })
-														       
-					       
-				       }
-	//              console.info('Deleting record');
-			       }
-	});
-	
+			title:activ_select_record
+				,msg:activate_select_record + '</b><br/>.'
+				,icon:Ext.Msg.QUESTION
+				,buttons:Ext.Msg.YESNO
+				,scope:this
+				,fn:function(response) {
+					if('yes' !== response) {
+						return;
+					}
+					else
+					{
+						var box = Ext.MessageBox.wait(please_wait, performing_actions);
+						var selectedIds = "";
+						for(var i=0; i<selectedArray.length; i++)
+						{
+							if(i==0)
+							{
+								selectedIds = selectedArray[i]["data"]["id"];
+							}else
+							{
+								selectedIds = selectedIds+"^"+selectedArray[i]["data"]["id"];
+							}						
+						}
+					    Ext.Ajax.request(
+						{
+							url: path+'Reports/personnel_unblock/'+selectedIds+'/'
+							,method:'GET'
+							,success: function(response){
+									ds.reload();
+									box.hide();
+								}
+								,failure: function(response){
+									box.hide();
+									Ext.Msg.alert(err, err_unblock);
+									
+									//ds.load();
+								}
+								,scope: this
+						})
+					}
+					//console.info('Deleting record');
+			    }
+		});
 	}
 	else
 	{
 		Ext.Msg.alert(warning,not_allowed_access);
 	}	
-	
 }	
 
 function blockSelected()
@@ -121,62 +108,54 @@ function blockSelected()
 	if(is_block == 1)
 	{
 		Ext.Msg.show({
-					title:deactiv_select_record
-				       ,msg:deactivate_select_record + '</b><br/>.'
-				       ,icon:Ext.Msg.QUESTION
-				       ,buttons:Ext.Msg.YESNO
-				       ,scope:this
-				       ,fn:function(response) {
-					       if('yes' !== response) {
-						       return;
-					       }
-					       else
-					       {
-						       var box = Ext.MessageBox.wait(please_wait, performing_actions);										
-							   var selectedIds = "";
-						       for(var i=0; i<selectedArray.length; i++)
-						       {
-							       if(i==0)
-							       {
-								       selectedIds = selectedArray[i]["data"]["id"];
-							       }else
-							       {
-								       selectedIds = selectedIds+"^"+selectedArray[i]["data"]["id"];
-							       }						
-							       
-							       
-
-						       }
-						       Ext.Ajax.request(
-											       {
-														url: path+'Reports/personnel_block/'+selectedIds+'/'
-														,method:'GET'
-														,success: function(response){
-														       ds.reload();
-														       box.hide();
-													       }
-													       ,failure: function(response){
-														       box.hide();
-														       Ext.Msg.alert(err, err_block);
-														       
-														       //ds.load();
-													       }
-													       ,scope: this
-																
-											       })
-										       
-						       
-					       }
-	       //              console.info('Deleting record');
-				       }
-	});
+			title:deactiv_select_record
+				,msg:deactivate_select_record + '</b><br/>.'
+				,icon:Ext.Msg.QUESTION
+				,buttons:Ext.Msg.YESNO
+				,scope:this
+				,fn:function(response) {
+					if('yes' !== response) {
+						return;
+					}
+					else
+					{
+						var box = Ext.MessageBox.wait(please_wait, performing_actions);										
+						var selectedIds = "";
+						for(var i=0; i<selectedArray.length; i++)
+						{
+							if(i==0)
+							{
+								selectedIds = selectedArray[i]["data"]["id"];
+							}else
+							{
+								selectedIds = selectedIds+"^"+selectedArray[i]["data"]["id"];
+							}						
+						}
+						Ext.Ajax.request(
+						{
+							url: path+'Reports/personnel_block/'+selectedIds+'/'
+							,method:'GET'
+							,success: function(response){
+									ds.reload();
+									box.hide();
+								}
+								,failure: function(response){
+									box.hide();
+									Ext.Msg.alert(err, err_block);
+									
+									//ds.load();
+								}
+								,scope: this
+						})
+					}
+	       			//console.info('Deleting record');
+				}
+		});
 	}
 	else
 	{
 		Ext.Msg.alert(warning,not_allowed_access);
-	}			
-	
-	
+	}				
 }
 
 function deleteSelected()
@@ -216,7 +195,7 @@ function deleteSelected()
 						
 			            if(is_delete == 1)
 						{
-						  delete_personel(selectedIds);
+						  	delete_personel(selectedIds);
 						}
 						else
 						{

@@ -19,10 +19,6 @@ class HssePersonnelTable extends Table
             'joinType' => 'INNER',
         ]);
 
-        $this->AdminMasters->belongsTo('RoleMasters', [
-            'foreignKey' => 'role_master_id',
-            'joinType' => 'LEFT',
-        ]);
     }
 }
 	

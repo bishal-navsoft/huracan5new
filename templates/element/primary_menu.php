@@ -7,48 +7,39 @@
     
 </script>
 
-<?php
-
-for($m=0;$m<count($admin_menus_parrentdata);$m++){
-    if(count($admin_menus_parrentdata[$m])>0){
-    ?>
-    <ul>
-      <li><a href="javascript:void(0);" ><?php echo $admin_menus_parrentdata[$m][0]['AdminMenu']['menu_name']; ?></a>
-        <?php
-        if(isset($admin_menus_children[$admin_menus_parrentdata[$m][0]['AdminMenu']['id']]))
-         if(count($admin_menus_children[$admin_menus_parrentdata[$m][0]['AdminMenu']['id']])>0){?>
-         
-            <div class="dropdown_box">
-            <div class="innerdrop">
+<?php if (!empty($admin_menus_parrentdata)): ?>
+    <?php foreach ($admin_menus_parrentdata as $parentMenu): ?>
+        <?php if (!empty($parentMenu)): ?>
             <ul>
-              <?php
-                  for($sm=0;$sm<count($admin_menus_children[$admin_menus_parrentdata[$m][0]['AdminMenu']['id']]);$sm++){?>
+                <li>
+                    <a href="javascript:void(0);">
+                        <?= h($parentMenu->menu_name) ?>
+                    </a>
 
-          <?php
-          
-          for($n=0;$n<count($admin_menus_children[$admin_menus_parrentdata[$m][0]['AdminMenu']['id']][$sm]);$n++){
-            ?>
-          <li><a href="<?php echo $this->webroot.$admin_menus_children[$admin_menus_parrentdata[$m][0]['AdminMenu']['id']][$sm]['AdminMenu']['url']; ?>"><?php echo $admin_menus_children[$admin_menus_parrentdata[$m][0]['AdminMenu']['id']][$sm]['AdminMenu']['menu_name']; ?></a></li>
-            
-         <?php }
-          
-          ?>
-            
-            
-                 <?php  }
-                 
-              
-              ?>
-              
+                    <?php
+                    $parentId = $parentMenu->id;
+                    if (!empty($admin_menus_children[$parentId])): ?>
+                        <div class="dropdown_box">
+                            <div class="innerdrop">
+                                <ul>
+                                    <?php foreach ($admin_menus_children[$parentId] as $childGroup): ?>
+                                        <?php foreach ($childGroup as $childMenu): ?>
+                                            <?php if (!empty($childMenu)): ?>
+                                                <li>
+                                                    <a href="<?= $this->Url->build('/' . ltrim($childMenu->url, '/')) ?>">
+                                                        <?= h($childMenu->menu_name) ?>
+                                                    </a>
+                                                </li>
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </li>
             </ul>
-            </div>
-            </div>
-          
-         <?php }
-         
-        ?>
-      
-      </li>
-    </ul>
-    
-<?php }}  ?>
+        <?php endif; ?>
+    <?php endforeach; ?>
+<?php endif; ?>
+

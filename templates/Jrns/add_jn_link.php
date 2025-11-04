@@ -123,10 +123,13 @@
     <?php
     //echo '<pre>';
     //print_r($reportDeatil);
-    echo $this->Form->create('Jrns', array('type'=>'file','id' => 'add_report_link_form','name'=>'add_report_link_form','class'=>'adminform'));
-
-    
-    
+    echo $this->Form->create(null, [
+        'url' => ['controller' => 'Jrns', 'action' => 'addReportLink'],
+        'type' => 'file',
+        'id' => 'add_report_link_form',
+        'name' => 'add_report_link_form',
+        'class' => 'adminform'
+    ]);
  ?>
 
 <div class="sub_contentwrap fixreport_table" >

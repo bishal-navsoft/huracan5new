@@ -91,9 +91,15 @@
   </script>   
 
 <?php
-	 
-    echo $this->Form->create('add_job_customer_form', array('controller' => 'add_job_customer_form','name'=>"add_job_customer_form", 'id'=>"add_job_customer_form", 'method'=>'post','class'=>'investigation'));
- ?>
+    echo $this->Form->create(null, [
+        'url' => ['controller' => 'Jobs', 'action' => 'addJobCustomer'],
+        'name' => 'add_job_customer_form',
+        'id' => 'add_job_customer_form',
+        'method' => 'post',
+        'class' => 'investigation'
+    ]);
+?>
+
 
  <h2><?php echo $heading; ?>&nbsp;&nbsp;<?php echo $report_number; ?><span class="textcmpul">Field marked with * are compulsory  </span></h2>
 		<div class="sub_contentwrap">

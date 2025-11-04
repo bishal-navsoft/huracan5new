@@ -96,8 +96,16 @@
      
      
   </script>
-     <?php echo $this->Form->create('add_report_investigation_form', array('controller' => 'Sqreports','name'=>"add_report_investigation_form", 'id'=>"add_report_investigation_form", 'method'=>'post','class'=>'investigation'));
- echo $this->Element('investigation_element'); ?>    
+     <?php 
+        echo $this->Form->create(null, [
+            'url' => ['controller' => 'Sqreports', 'action' => 'addReportInvestigation'], // adjust the action if different
+            'id' => 'add_report_investigation_form',
+            'type' => 'post',
+            'class' => 'investigation'
+        ]);
+
+        echo $this->Element('investigation_element');
+     ?>    
    
 <div class="buttonpanel">
 <input type="hidden" id='report_id'  name='report_id'  value='<?php echo $report_id; ?>' />       

@@ -136,10 +136,27 @@ function add_report_personal()
     }
  </script>   
  <?php
-    echo $this->Form->create('add_jn_personal_form', array('controller' => 'Jnreports','name'=>"add_jn_personal_form", 'id'=>"add_jn_personal_form", 'method'=>'post','class'=>'adminform'));
-    echo $this->Form->input('id', array('type'=>'hidden', 'id'=>'id', 'value'=>$id));
-    echo $this->Form->input('pid', array('type'=>'hidden', 'pid'=>'id', 'value'=>$pid));
- ?>
+    echo $this->Form->create(null, [
+        'url' => ['controller' => 'Jnreports', 'action' => 'addJnPersonal'],
+        'name' => 'add_jn_personal_form',
+        'id' => 'add_jn_personal_form',
+        'method' => 'post',
+        'class' => 'adminform'
+    ]);
+
+    echo $this->Form->control('id', [
+        'type' => 'hidden',
+        'id' => 'id',
+        'value' => $id
+    ]);
+
+    echo $this->Form->control('pid', [
+        'type' => 'hidden',
+        'id' => 'pid',
+        'value' => $pid
+    ]);
+?>
+
 
  <h2><?php echo $heading; ?><span class="textcmpul">Field marked with * are compulsory  </span></h2>
  <br/>

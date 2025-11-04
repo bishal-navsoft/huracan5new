@@ -41,7 +41,7 @@ class EmailsController extends AppController
         $this->loadModel('HsseIncident');
         $this->loadModel('HssePersonnel');
         $this->loadModel('RolePermission');
-        $this->loadModel('RoleMasters');
+        //$this->loadModel('RoleMasters');
         $this->loadModel('AdminMenu');
         $this->loadModel('IncidentCategory');
         $this->loadModel('Losses');

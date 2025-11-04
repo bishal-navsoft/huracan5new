@@ -155,8 +155,19 @@ function check_character(){
 <?php	 
      }
 
-    echo $this->Form->create('add_jn_main_form', array('controller' => 'Jnreports','name'=>"add_jn_main_form", 'id'=>"add_jn_main_form", 'method'=>'post','class'=>'adminform'));
-    echo $this->Form->input('id', array('type'=>'hidden', 'id'=>'id', 'value'=>$id));
+    echo $this->Form->create(null, [
+        'url' => ['controller' => 'Jnreports', 'action' => 'addJnMain'],
+        'name' => 'add_jn_main_form',
+        'id' => 'add_jn_main_form',
+        'method' => 'post',
+        'class' => 'adminform'
+    ]);
+
+    echo $this->Form->control('id', [
+        'type' => 'hidden',
+        'id' => 'id',
+        'value' => $id
+    ]);
  ?>
 
  <h2><?php echo $heading; ?><span class="textcmpul">Field marked with * are compulsory  </span> &nbsp;<a href="http://maps.google.com.au/" target='_blank' style="font-size: 12px;">Get Directions</a>&nbsp;&nbsp;&nbsp;<a href="http://wellinfo.com.au" target='_blank' style="font-size: 12px;">Find a well</a></h2>

@@ -159,8 +159,19 @@ function check_character(){
          echo $this->Element('sqtab');
      }
 
-    echo $this->Form->create('add_sq_main_form', array('controller' => 'Sqreports','name'=>"add_sq_main_form", 'id'=>"add_sq_main_form", 'method'=>'post','class'=>'adminform'));
-    echo $this->Form->input('id', array('type'=>'hidden', 'id'=>'id', 'value'=>$id));
+    echo $this->Form->create(null, [
+		'url' => ['controller' => 'Sqreports', 'action' => 'addSqMain'], // adjust action if needed
+		'id' => 'add_sq_main_form',
+		'type' => 'post',
+		'class' => 'adminform'
+	]);
+
+	echo $this->Form->control('id', [
+		'type' => 'hidden',
+		'id' => 'id',
+		'value' => $id ?? null,
+		'label' => false
+	]);
  ?>
 
  <h2><?php echo $heading; ?><span class="textcmpul">Field marked with * are compulsory  </span></h2>

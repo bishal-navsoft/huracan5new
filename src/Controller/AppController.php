@@ -225,8 +225,8 @@ class AppController extends Controller
         }
         // debug("fuol;");
 
-        $this->loadModel('RolePermissions');
-        $this->loadModel('AdminMenus');
+        $this->RolePermissions = $this->fetchTable('RolePermissions');
+        $this->AdminMenus = $this->fetchTable('AdminMenus');
 
         $rpmData = $this->RolePermissions->find()
             ->where(['role_master_id' => $roleMasterId, 'view' => '1'])
@@ -268,7 +268,7 @@ class AppController extends Controller
     // --------------------- Report helpers ---------------------
     public function report_hsse_link(): void
     {
-        $this->loadModel('Reports');
+        $this->Reports = $this->fetchTable('Reports');
         $allHsseReport = $this->Reports->find()
             ->where(['isdeleted' => 'N'])
             ->order(['id' => 'DESC'])
@@ -716,8 +716,8 @@ class AppController extends Controller
             $urlLike = 'RoleMasters/list_roles';
         }
 
-        $this->loadModel('RolePermissions');
-        $this->loadModel('AdminMenus');
+        $this->RolePermissions = $this->fetchTable('RolePermissions');
+        $this->AdminMenus = $this->fetchTable('AdminMenus');
 
         $roleMenuData = $this->RolePermissions->find()
             ->contain(['AdminMenus'])

@@ -139,8 +139,19 @@ function check_character(){
          echo $this->Element('documentationtab');
      }
 
-    echo $this->Form->create('add_documentation_main_form', array('controller' => 'Documentations','name'=>"add_documentation_main_form", 'id'=>"add_documentation_main_form", 'method'=>'post','class'=>'adminform'));
-    echo $this->Form->input('id', array('type'=>'hidden', 'id'=>'id', 'value'=>$id));
+    echo $this->Form->create(null, [
+        'url' => ['controller' => 'Documentations', 'action' => 'add_documentation_main'],
+        'name' => 'add_documentation_main_form',
+        'id' => 'add_documentation_main_form',
+        'method' => 'post',
+        'class' => 'adminform'
+    ]);
+
+    echo $this->Form->control('id', [
+        'type' => 'hidden',
+        'id' => 'id',
+        'value' => $id
+    ]);
  ?>
 
  <h2><?php echo $heading; ?><span class="textcmpul">Field marked with * are compulsory  </span></h2>

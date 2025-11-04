@@ -37,5 +37,20 @@ class AppView extends View
      */
     public function initialize(): void
     {
+        parent::initialize();
+        $this->params = new class($this) implements \ArrayAccess {
+            private $view;
+            public function __construct($view) { $this->view = $view; }
+            public function offsetExists($offset): bool {
+                return $this->view->getRequest()->getParam($offset) !== null;
+            }
+            public function offsetGet($offset): mixed {
+                return $this->view->getRequest()->getParam($offset);
+            }
+            public function offsetSet($offset, $value): void {}
+            public function offsetUnset($offset): void {}
+        };
+        $this->loadHelper('Webroot');
+        
     }
 }

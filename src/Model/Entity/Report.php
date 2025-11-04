@@ -27,7 +27,7 @@ class Report extends Entity
      *
      * @var array
      */
-    protected $_accessible = [
+    protected array $_accessible = [
         'report_no' => true,
         'client' => true,
         'event_date' => true,

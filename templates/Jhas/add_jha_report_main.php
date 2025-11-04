@@ -149,8 +149,19 @@ function check_character(){
          echo $this->Element('jhatab');
      }
 
-    echo $this->Form->create('add_jha_main_form', array('controller' => 'Jhas','name'=>"add_jha_main_form", 'id'=>"add_jha_main_form", 'method'=>'post','class'=>'adminform'));
-    echo $this->Form->input('id', array('type'=>'hidden', 'id'=>'id', 'value'=>$id));
+    echo $this->Form->create(null, [
+        'url' => ['controller' => 'Jhas', 'action' => 'add_jha_main'],
+        'name' => 'add_jha_main_form',
+        'id' => 'add_jha_main_form',
+        'method' => 'post',
+        'class' => 'adminform'
+    ]);
+
+    echo $this->Form->control('id', [
+        'type' => 'hidden',
+        'id' => 'id',
+        'value' => $id
+    ]);
  ?>
 
  <h2><?php echo $heading; ?><span class="textcmpul">Validation date mandatory for revalidation Date </span></h2>

@@ -121,9 +121,21 @@ function add_hsse_attach()
      
   </script>   
     <?php
-    echo $this->Form->create('Report', array('type'=>'file','id' => 'add_report_attachment_form','name'=>'add_report_attachment_form','class'=>'adminform'));
-    echo $this->Form->input('id', array('type'=>'hidden', 'id'=>'id', 'value'=>$attachment_id));
- ?>
+    echo $this->Form->create(null, [
+        'url' => ['controller' => 'Reports', 'action' => 'addReportAttachment'],
+        'type' => 'file',
+        'id' => 'add_report_attachment_form',
+        'name' => 'add_report_attachment_form',
+        'class' => 'adminform'
+    ]);
+
+    echo $this->Form->control('id', [
+        'type' => 'hidden',
+        'id' => 'id',
+        'value' => $attachment_id
+    ]);
+?>
+
 
 <div class="sub_contentwrap">
      <table width="100%" border="0" cellspacing="1" cellpadding="0" class="investigationtable">
