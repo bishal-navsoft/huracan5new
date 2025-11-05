@@ -11,6 +11,8 @@ use Cake\Mailer\Email;
 use Cake\Routing\Router;
 use Cake\Http\Response;
 use Cake\I18n\FrozenTime;
+use Cake\Utility\Hash;
+use Cake\I18n\FrozenDate;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Http\Exception\BadRequestException;
 use Cake\Log\Log;
@@ -1911,10 +1913,10 @@ class ReportsController extends AppController
             $personneldetail = $this->HssePersonnel->find()
                 ->where([
                     'personal_data' => $personalid[2],
-                    'report_id' => $data['report_id']
+                    'report_id' => $data['report_id'],
+                    'isdeleted' => 'N'
                 ])
                 ->first();
-
             if ($personneldetail) {
                 echo "avl";
                 return;
@@ -2201,11 +2203,11 @@ class ReportsController extends AppController
         $this->autoRender = false;
         $this->response = $this->response->withType('json');
 
-        $HsseIncidents = $this->loadModel('HsseIncident');
-        $IncidentSeverity = $this->loadModel('IncidentSeverity');
-        $Losses = $this->loadModel('Losses');
-        $IncidentCategory = $this->loadModel('IncidentCategory');
-        $IncidentSubCategory = $this->loadModel('IncidentSubCategory');
+        $HsseIncidents = $this->HsseIncident;
+        $IncidentSeverity = $this->IncidentSeverity;
+        $Losses = $this->Losses;
+        $IncidentCategory = $this->IncidentCategory;
+        $IncidentSubCategory = $this->IncidentSubCategory;
 
         // Base conditions
         $conditions = [
@@ -2463,13 +2465,7 @@ class ReportsController extends AppController
                 }
             }
 
-            $dateIncident = '';
-            if (!empty($incidentDetail->date_incident)) {
-                $dateParts = explode('-', $incidentDetail->date_incident);
-                if (count($dateParts) === 3) {
-                    $dateIncident = $dateParts[1] . '-' . $dateParts[2] . '-' . $dateParts[0];
-                }
-            }
+            $dateIncident = $incidentDetail->date_incident ? $incidentDetail->date_incident->format('m-d-Y') : '';
             $this->set([
                 'incident_loss' => $incidentLoss,
                 'incident_category' => $incidentCategory,
@@ -2489,16 +2485,15 @@ class ReportsController extends AppController
             ]);
         } else {
             // Add mode
-            $firstLoss = $incidentLossDetail->first();
-            $incidentCategoryDetail = $firstLoss
-                ? $this->IncidentCategory->find()->where(['IncidentCategory.loss_id' => $firstLoss->id])->all()
-                : [];
+            // $firstLoss = $incidentLossDetail->first();
+            // $incidentCategoryDetail = $firstLoss
+            //     ? $this->IncidentCategory->find()->where(['IncidentCategory.loss_id' => $firstLoss->id])->all()
+            //     : [];
+            // $firstCategory = !$incidentCategoryDetail->isEmpty() ? $incidentCategoryDetail->first() : null;
 
-            $firstCategory = !$incidentCategoryDetail->isEmpty() ? $incidentCategoryDetail->first() : null;
-
-            $incidentSubCategoryDetail = $firstCategory
-                ? $this->IncidentSubCategory->find()->where(['IncidentSubCategory.loss_category_id' => $firstCategory->id])->all()
-                : [];
+            // $incidentSubCategoryDetail = $firstCategory
+            //     ? $this->IncidentSubCategory->find()->where(['IncidentSubCategory.loss_category_id' => $firstCategory->id])->all()
+            //     : [];
 
             $existingIncidents = $this->HsseIncident->find()
                 ->where(['HsseIncident.report_id' => $decodedReportId])
@@ -2507,8 +2502,8 @@ class ReportsController extends AppController
             $incident_no = $existingIncidents + 1;
 
             $this->set([
-                'incidentCategoryDetail' => $incidentCategoryDetail,
-                'incidentSubCategoryDetail' => $incidentSubCategoryDetail,
+                'incidentCategoryDetail' => '',
+                'incidentSubCategoryDetail' => '',
                 'heading' => 'Add Incident Data',
                 'button' => 'Submit',
                 'incident_id' => 0,
@@ -2526,7 +2521,7 @@ class ReportsController extends AppController
         }
     }
 
-    public function hsseIncidentProcess()
+    public function hsseincidentprocess()
     {
         // Use AJAX layout
         $this->viewBuilder()->setLayout('ajax');
@@ -2545,7 +2540,7 @@ class ReportsController extends AppController
             $incident = $this->HsseIncident->get($data['id']);
             $res = 'update';
         } else {
-            $incident = $this->HsseIncident->newEntity();
+            $incident = $this->HsseIncident->newEmptyEntity();
             $res = 'add';
         }
         
@@ -2590,13 +2585,12 @@ class ReportsController extends AppController
         return;
     }
 
-    public function displayContentForLoss()
+    public function displaycontentforloss()
     {
         $this->request->allowMethod(['post']); // ensure only POST
         $this->viewBuilder()->setLayout('ajax');
 
         $data = $this->request->getData();
-
         $incidentCategoryDetail = [];
         $incidentSubCategoryDetail = [];
         $type = null;
@@ -2992,7 +2986,8 @@ class ReportsController extends AppController
                 'remidial_style' => 'style="display:none"',
                 'remidial_button_style' => 'style="display:block"',
             ]);
-        } else {
+        } else 
+        {
             // Fetch existing remedial data
             $remidialData = $hsseRemidialTable->find()
                 ->where(['HsseRemidial.id' => base64_decode($remidial_id)])
@@ -3001,14 +2996,20 @@ class ReportsController extends AppController
             $this->set('countRem', $remidialData->remedial_no);
             $this->set('id', base64_decode($remidial_id));
 
+            if (!empty($remidialData->remidial_create)) {
+                $parts = explode('-', (string)$remidialData->remidial_create);
+                if (count($parts) >= 3) {
+                    $remidialCreate = implode('-', [$parts[1], $parts[2], $parts[0]]);
+                } else {
+                    $remidialCreate = '';
+                }
+            } else {
+                $remidialCreate = '';
+            }
             $this->set([
                 'heading' => 'Edit Remedial Action Item',
                 'button' => 'Update',
-                'remidial_create' => implode('-', [
-                    explode('-', $remidialData->remidial_create)[1],
-                    explode('-', $remidialData->remidial_create)[2],
-                    explode('-', $remidialData->remidial_create)[0]
-                ]),
+                'remidial_create' => $remidialCreate,
                 'remidial_summery' => $remidialData->remidial_summery,
                 'remidial_action' => $remidialData->remidial_action,
                 'remidial_priority' => $remidialData->remidial_priority,
@@ -3017,9 +3018,9 @@ class ReportsController extends AppController
                 'remidial_reminder_data' => $remidialData->remidial_reminder_data,
             ]);
 
-            if ($remidialData->remidial_closure_date && $remidialData->remidial_closure_date != '0000-00-00') {
-                $dateParts = explode('-', $remidialData->remidial_closure_date);
-                $this->set('remidial_closure_date', $dateParts[1] . '/' . $dateParts[2] . '/' . $dateParts[0]);
+            if (!empty($remidialData->remidial_closure_date) && $remidialData->remidial_closure_date != '0000-00-00') {
+                $formattedClosureDate = date('m/d/Y', strtotime((string)$remidialData->remidial_closure_date));
+                $this->set('remidial_closure_date', $formattedClosureDate);
                 $this->set('remidial_closer_summary', $remidialData->remidial_closer_summary);
                 $this->set('remidial_style', 'style="display:block"');
                 $this->set('remidial_button_style', 'style="display:none"');
@@ -3037,6 +3038,9 @@ class ReportsController extends AppController
         $this->request->allowMethod(['post', 'ajax']);
         $this->viewBuilder()->setLayout('ajax');
 
+        // Load model
+        $this->Priority = $this->fetchTable('Priority');
+
         $remidial_priority = $this->request->getData('remidial_priority');
         $remidial_create   = $this->request->getData('remidial_create');
 
@@ -3046,7 +3050,7 @@ class ReportsController extends AppController
         }
 
         // Fetch priority record
-        $rempriority = $this->Priorities
+        $rempriority = $this->Priority
             ->find()
             ->where(['id' => $remidial_priority])
             ->first();
@@ -3112,16 +3116,20 @@ class ReportsController extends AppController
             $remidialEntity = $this->HsseRemidial->get($data['add_report_remidial_form']['id']);
         } else {
             $res = 'add';
-            $remidialEntity = $this->HsseRemidial->newEntity();
+            $remidialEntity = $this->HsseRemidial->newEmptyEntity();
         }
 
         // Prepare dates
         $remidialCreateParts = explode('-', $data['remidial_create']);
         $remidialCreateFormatted = $remidialCreateParts[2] . '-' . $remidialCreateParts[0] . '-' . $remidialCreateParts[1];
 
+        $session = $this->getRequest()->getSession();
+        $adminData = $session->read('adminData');
+        $adminId = $adminData['AdminMasters']['id'] ?? null;
+
         $remidialEntity = $this->HsseRemidial->patchEntity($remidialEntity, [
             'remidial_create' => $remidialCreateFormatted,
-            'remidial_createby' => $_SESSION['adminData']['AdminMaster']['id'],
+            'remidial_createby' => $adminId,
             'report_no' => $data['report_no'],
             'remedial_no' => $data['countRem'],
             'remidial_priority' => explode('~', $data['remidial_priority'])[0],
@@ -3135,39 +3143,68 @@ class ReportsController extends AppController
                 ? $data['remidial_closure_date']
                 : null
         ]);
-
+        
         // Calculate reminder & email dates
-        $createON = $remidialEntity->remidial_create . ' 00:00:00';
-        $explodeCTR = explode(' ', $remidialEntity->remidial_closure_target);
-        $explodeCTD = explode('/', $explodeCTR[0]);
-        $reminderON = $explodeCTD[1] . '-' . $explodeCTD[0] . '-' . $explodeCTD[2] . ' ' . $explodeCTR[1];
-
+        $createON = ($remidialEntity->remidial_create ?? date('Y-m-d')) . ' 00:00:00';
         $strCreateOn = strtotime($createON);
-        $strReminderOn = strtotime($reminderON);
 
-        $remdate = $explodeCTD[2] . '-' . $explodeCTD[1] . '-' . $explodeCTD[0];
-        $dateHolder = [$remdate];
-        $dateIndex = [3, 7, 30];
+        // Initialize defaults
+        $reminderON = date('Y-m-d H:i:s');
+        $explodeCTD = [];
+        $remdate = date('Y-m-d');
 
-        foreach ($dateIndex as $idx) {
-            $emaildateBefore = date('Y-m-d', mktime(0, 0, 0, $explodeCTD[1], $explodeCTD[0] - $idx, $explodeCTD[2]));
-            if ($strCreateOn < strtotime($emaildateBefore)) {
-                $dateHolder[] = $emaildateBefore;
-            }
+        // Safely extract closure target
+        $target = trim((string)($remidialEntity->remidial_closure_target ?? ''));
 
-            $emaildateAfter = date('Y-m-d', mktime(0, 0, 0, $explodeCTD[1], $explodeCTD[0] + $idx, $explodeCTD[2]));
-            if ($strCreateOn < strtotime($emaildateAfter)) {
-                $dateHolder[] = $emaildateAfter;
+        if (!empty($target)) {
+            $explodeCTR = explode(' ', $target);
+            $datePart = $explodeCTR[0] ?? '';
+            $timePart = $explodeCTR[1] ?? '00:00:00';
+
+            $explodeCTD = explode('/', $datePart);
+
+            if (count($explodeCTD) === 3) {
+                // Convert dd/mm/yyyy to yyyy-mm-dd format
+                $reminderON = sprintf('%s-%s-%s %s', $explodeCTD[1], $explodeCTD[0], $explodeCTD[2], $timePart);
+                $remdate = sprintf('%s-%s-%s', $explodeCTD[2], $explodeCTD[1], $explodeCTD[0]);
             }
         }
 
-        // Delete existing email reminders
+        $strReminderOn = strtotime($reminderON);
+
+        // Initialize holder arrays
+        $dateHolder = [$remdate];
+        $dateIndex = [3, 7, 30];
+
+        // Only run loop if valid date parts exist
+        if (count($explodeCTD) === 3) {
+            $day = (int)$explodeCTD[0];
+            $month = (int)$explodeCTD[1];
+            $year = (int)$explodeCTD[2];
+
+            foreach ($dateIndex as $idx) {
+                $emaildateBefore = date('Y-m-d', mktime(0, 0, 0, $month, $day - $idx, $year));
+                if ($strCreateOn < strtotime($emaildateBefore)) {
+                    $dateHolder[] = $emaildateBefore;
+                }
+
+                $emaildateAfter = date('Y-m-d', mktime(0, 0, 0, $month, $day + $idx, $year));
+                if ($strCreateOn < strtotime($emaildateAfter)) {
+                    $dateHolder[] = $emaildateAfter;
+                }
+            }
+        }
+
+        // ✅ Delete existing email reminders safely
         $connection = $this->RemidialEmailList->getConnection();
         $connection->execute(
-            'DELETE FROM remidial_email_lists WHERE remedial_no = :remedial_no AND report_id = :report_id AND report_type = :report_type',
+            'DELETE FROM remidial_email_lists 
+            WHERE remedial_no = :remedial_no 
+            AND report_id = :report_id 
+            AND report_type = :report_type',
             [
-                'remedial_no' => $remidialEntity->remedial_no,
-                'report_id' => $remidialEntity->report_no,
+                'remedial_no' => $remidialEntity->remedial_no ?? '',
+                'report_id' => $remidialEntity->report_no ?? '',
                 'report_type' => 'hsse'
             ]
         );
@@ -3238,8 +3275,8 @@ class ReportsController extends AppController
         $this->set('id', $decodedId);
 
         // Load models explicitly (if not loaded in initialize)
-        $this->loadModel('Reports');
-        $this->loadModel('HsseClient');
+        $this->Reports = $this->fetchTable('Reports');
+        $this->HsseClient = $this->fetchTable('HsseClient');
 
         // Fetch report detail
         $reportdetail = $this->Reports->find()
@@ -3289,185 +3326,217 @@ class ReportsController extends AppController
 
     public function get_all_remidial_list($report_id)
     {
-        Configure::write("debug", "2"); //set debug to 0 for this function because debugging info breaks the XMLHttpRequest
-        $this->layout = "ajax"; //this tells the controller to use the Ajax layout instead of the default layout (since we're using ajax . . .)
-        //pr($_REQUEST);
-        $this->_checkAdminSession();
-        $condition = "";
-
-        $condition = "HsseRemidial.report_no = $report_id AND HsseRemidial.isdeleted = 'N'";
-
-        if (isset($_REQUEST["filter"])) {
-            //echo '<pre>';
-            //print_r($_REQUEST);
-
-            switch ($this->data["filter"]) {
-                case "create_on":
-                    $explodemonth = explode("/", $this->data["value"]);
-                    $day = $explodemonth[0];
-                    $month = date("m", strtotime($explodemonth[1]));
-                    $year = "20$explodemonth[2]";
-                    $createon = $year . "-" . $month . "-" . $day;
-                    $condition .=
-                        "AND HsseRemidial.remidial_create ='" . $createon . "'";
-                    break;
-                case "remidial_create_name":
-                    $spliNAME = explode(" ", $_REQUEST["value"]);
-                    $spliLname = $spliNAME[count($spliNAME) - 1];
-                    $spliFname = $spliNAME[0];
-                    $adminCondition =
-                        "AdminMaster.first_name like '%" .
-                        $spliFname .
-                        "%' AND AdminMaster.last_name like '%" .
-                        $spliLname .
-                        "%'";
-                    $userDetail = $this->AdminMaster->find("all", [
-                        "conditions" => $adminCondition,
-                    ]);
-                    $addimid = $userDetail[0]["AdminMaster"]["id"];
-                    $condition .=
-                        "AND HsseRemidial.remidial_createby ='" .
-                        $addimid .
-                        "'";
-
-                    break;
-                case "responsibility_person":
-                    $spliNAME = explode(" ", $_REQUEST["value"]);
-                    $spliLname = $spliNAME[count($spliNAME) - 1];
-                    $spliFname = $spliNAME[0];
-                    $adminCondition =
-                        "AdminMaster.first_name like '%" .
-                        $spliFname .
-                        "%' AND AdminMaster.last_name like '%" .
-                        $spliLname .
-                        "%'";
-                    $userDetail = $this->AdminMaster->find("all", [
-                        "conditions" => $adminCondition,
-                    ]);
-                    $addimid = $userDetail[0]["AdminMaster"]["id"];
-                    $condition .=
-                        "AND HsseRemidial.remidial_responsibility ='" .
-                        $addimid .
-                        "'";
-                    break;
-                case "remidial_priority_name":
-                    $priorityCondition =
-                        "Priority.type='" . trim($_REQUEST["value"]) . "'";
-                    $priorityDetail = $this->Priority->find("all", [
-                        "conditions" => $priorityCondition,
-                    ]);
-                    $condition .=
-                        "AND HsseRemidial.remidial_priority ='" .
-                        $priorityDetail[0]["Priority"]["id"] .
-                        "'";
-                    break;
-            }
-        }
-        $limit = null;
-        if ($_REQUEST["limit"] == "all") {
-            //$condition .= " order by Category.id DESC";
-        } else {
-            $limit = $_REQUEST["start"] . ", " . $_REQUEST["limit"];
-        }
-
-        //$count = $this->HsseIncident->find('count' ,array('conditions' => $condition));
-        $adminArray = [];
-        $count = $this->HsseRemidial->find("count", [
-            "conditions" => $condition,
-        ]);
-        $adminA = $this->HsseRemidial->find("all", [
-            "conditions" => $condition,
-            "order" => "HsseRemidial.id DESC",
-            "limit" => $limit,
-        ]);
-
-        $i = 0;
-        foreach ($adminA as $rec) {
-            if ($rec["HsseRemidial"]["isblocked"] == "N") {
-                $adminA[$i]["HsseRemidial"]["blockHideIndex"] = "true";
-                $adminA[$i]["HsseRemidial"]["unblockHideIndex"] = "false";
-                $adminA[$i]["HsseRemidial"]["isdeletdHideIndex"] = "true";
-            } else {
-                $adminA[$i]["HsseRemidial"]["blockHideIndex"] = "false";
-                $adminA[$i]["HsseRemidial"]["unblockHideIndex"] = "true";
-                $adminA[$i]["HsseRemidial"]["isdeletdHideIndex"] = "false";
-            }
-
-            $create_on = explode("-", $rec["HsseRemidial"]["remidial_create"]);
-            $adminA[$i]["HsseRemidial"]["create_on"] = date(
-                "d/M/y",
-                mktime(0, 0, 0, $create_on[1], $create_on[2], $create_on[0])
-            );
-            $lastupdated = explode(" ", $rec["HsseRemidial"]["modified"]);
-            $lastupdatedate = explode("-", $lastupdated[0]);
-            $adminA[$i]["HsseRemidial"]["lastupdate"] = date(
-                "d/M/y",
-                mktime(
-                    0,
-                    0,
-                    0,
-                    $lastupdatedate[1],
-                    $lastupdatedate[2],
-                    $lastupdatedate[0]
-                )
-            );
-            $createdate = explode("-", $rec["HsseRemidial"]["remidial_create"]);
-            $adminA[$i]["HsseRemidial"]["createRemidial"] = date(
-                "d/M/y",
-                mktime(0, 0, 0, $createdate[1], $createdate[2], $createdate[0])
-            );
-            $adminA[$i]["HsseRemidial"]["remidial_priority_name"] =
-                "<font color=" .
-                $rec["Priority"]["colorcoder"] .
-                ">" .
-                $rec["Priority"]["type"] .
-                "</font>";
-            $adminA[$i]["HsseRemidial"]["remidial_create_name"] =
-                $rec["AdminMaster"]["first_name"] .
-                " " .
-                $rec["AdminMaster"]["last_name"];
-            $user_detail_reponsibilty = $this->AdminMaster->find("all", [
-                "conditions" => [
-                    "AdminMaster.id" =>
-                        $rec["HsseRemidial"]["remidial_responsibility"],
-                ],
-            ]);
-            $adminA[$i]["HsseRemidial"]["responsibility_person"] =
-                $user_detail_reponsibilty[0]["AdminMaster"]["first_name"] .
-                "  " .
-                $user_detail_reponsibilty[0]["AdminMaster"]["last_name"];
-            if ($rec["HsseRemidial"]["remidial_closure_date"] != "0000-00-00") {
-                $rem_cls_date = explode(
-                    "-",
-                    $rec["HsseRemidial"]["remidial_closure_date"]
-                );
-                $adminA[$i]["HsseRemidial"]["closure"] = date(
-                    "d/M/y",
-                    mktime(
-                        0,
-                        0,
-                        0,
-                        $rem_cls_date[1],
-                        $rem_cls_date[2],
-                        $rem_cls_date[0]
-                    )
-                );
-            } else {
-                $adminA[$i]["HsseRemidial"]["closure"] = "";
-            }
-            $i++;
-        }
-
-        if ($count == 0) {
-            $adminArray = [];
-        } else {
-            $adminArray = Set::extract($adminA, "{n}.HsseRemidial");
-        }
-
-        $this->set("total", $count); //send total to the view
-        $this->set("admins", $adminArray); //send products to the view
-        //$this->set('status', $action);
+        return $this->getAllRemidialList($report_id);
     }
+
+    public function getAllRemidialList($reportId)
+    {
+        // Ajax layout
+        $this->viewBuilder()->setLayout('ajax');
+        $this->request->allowMethod(['get', 'post']);
+
+        $this->_checkAdminSession(); // keep your session check
+
+        // Input (support POST or GET)
+        $filter = $this->request->getData('filter') ?? $this->request->getQuery('filter');
+        $value  = $this->request->getData('value')  ?? $this->request->getQuery('value');
+        $start  = $this->request->getData('start')  ?? $this->request->getQuery('start');
+        $limit  = $this->request->getData('limit')  ?? $this->request->getQuery('limit');
+
+        // Base conditions
+        $conditions = [
+            'HsseRemidial.report_no' => $reportId,
+            'HsseRemidial.isdeleted'  => 'N'
+        ];
+
+        // Apply filters
+        if (!empty($filter) && $value !== null) {
+            switch ($filter) {
+                case 'create_on':
+                    // Expecting d/M/yy or d/M/yyyy like "01/Jan/23" per original code
+                    $parts = explode('/', $value);
+                    if (count($parts) === 3) {
+                        $day   = $parts[0];
+                        $month = date('m', strtotime($parts[1]));
+                        $year  = strlen($parts[2]) === 2 ? '20' . $parts[2] : $parts[2];
+                        $createOn = sprintf('%04d-%02d-%02d', (int)$year, (int)$month, (int)$day);
+                        $conditions['HsseRemidial.remidial_create'] = $createOn;
+                    }
+                    break;
+
+                case 'remidial_create_name':
+                    // Find admin by (first last) or single name fallback
+                    $names = preg_split('/\s+/', trim($value));
+                    $first = $names[0] ?? '';
+                    $last  = count($names) > 1 ? end($names) : '';
+
+                    $adminQuery = $this->fetchTable('AdminMasters')->find();
+
+                    if ($last !== '') {
+                        $adminQuery->where([
+                            'first_name LIKE' => "%{$first}%",
+                            'last_name LIKE'  => "%{$last}%"
+                        ]);
+                    } else {
+                        // single name: search either first OR last
+                        $adminQuery->where([
+                            'OR' => [
+                                'first_name LIKE' => "%{$first}%",
+                                'last_name LIKE'  => "%{$first}%"
+                            ]
+                        ]);
+                    }
+
+                    $admin = $adminQuery->first();
+                    if ($admin) {
+                        $conditions['HsseRemidial.remidial_createby'] = $admin->id;
+                    } else {
+                        // If no admin found, add impossible condition so query returns none
+                        $conditions['HsseRemidial.remidial_createby'] = -1;
+                    }
+                    break;
+
+                case 'responsibility_person':
+                    // same approach but map to remidial_responsibility
+                    $names = preg_split('/\s+/', trim($value));
+                    $first = $names[0] ?? '';
+                    $last  = count($names) > 1 ? end($names) : '';
+
+                    $adminQuery = $this->fetchTable('AdminMasters')->find();
+                    if ($last !== '') {
+                        $adminQuery->where([
+                            'first_name LIKE' => "%{$first}%",
+                            'last_name LIKE'  => "%{$last}%"
+                        ]);
+                    } else {
+                        $adminQuery->where([
+                            'OR' => [
+                                'first_name LIKE' => "%{$first}%",
+                                'last_name LIKE'  => "%{$first}%"
+                            ]
+                        ]);
+                    }
+                    $admin = $adminQuery->first();
+                    if ($admin) {
+                        $conditions['HsseRemidial.remidial_responsibility'] = $admin->id;
+                    } else {
+                        $conditions['HsseRemidial.remidial_responsibility'] = -1;
+                    }
+                    break;
+
+                case 'remidial_priority_name':
+                    $priority = $this->fetchTable('Priority')
+                        ->find()
+                        ->where(['type' => trim($value)])
+                        ->first();
+                    if ($priority) {
+                        $conditions['HsseRemidial.remidial_priority'] = $priority->id;
+                    } else {
+                        $conditions['HsseRemidial.remidial_priority'] = -1;
+                    }
+                    break;
+            }
+        }
+
+        // Count query (without limit/offset)
+        $table = $this->fetchTable('HsseRemidial');
+        $count = $table->find()
+            ->where($conditions)
+            ->count();
+
+        // Prepare main query with contain and ordering
+        $query = $table->find()
+            ->contain(['CreatedByAdmin', 'ResponsibleAdmin', 'Priority'])
+            ->where($conditions)
+            ->order(['HsseRemidial.id' => 'DESC']);
+
+        // Pagination if requested
+        if ($limit !== 'all' && is_numeric($start) && is_numeric($limit)) {
+            $query->limit((int)$limit)->offset((int)$start);
+        }
+
+        $rows = $query->all()->toArray();
+
+        // Helper to format date strings or Date objects as d/M/y
+        $fmt = function ($val) {
+            if (empty($val) || $val === '0000-00-00') {
+                return '';
+            }
+            if (is_object($val) && method_exists($val, 'format')) {
+                return $val->format('d/M/y');
+            }
+            // assume Y-m-d or Y-m-d H:i:s
+            $dt = \DateTime::createFromFormat('Y-m-d', substr($val,0,10));
+            if ($dt) {
+                return $dt->format('d/M/y');
+            }
+            // fallback
+            return $val;
+        };
+
+        $admins = [];
+        foreach ($rows as $rec) {
+            // convert entity -> array for output (you can adjust to keep entities)
+            $r = $rec->toArray();
+
+            // block/unblock flags (original used strings, keep booleans or strings as you prefer)
+            if (($rec->isblocked ?? 'N') === 'N') {
+                $r['blockHideIndex'] = 'true';
+                $r['unblockHideIndex'] = 'false';
+                $r['isdeletdHideIndex'] = 'true';
+            } else {
+                $r['blockHideIndex'] = 'false';
+                $r['unblockHideIndex'] = 'true';
+                $r['isdeletdHideIndex'] = 'false';
+            }
+
+            // dates
+            $r['create_on']      = $fmt($rec->remidial_create ?? null);
+            $r['lastupdate']     = $fmt($rec->modified ?? null);
+            $r['createRemidial'] = $fmt($rec->remidial_create ?? null);
+
+            // priority html (be mindful of HTML-in-data; original used <font>)
+            $priorityType = $rec->priority->type ?? '';
+            $priorityColor = $rec->priority->colorcoder ?? '';
+            $r['remidial_priority_name'] = '<font color="' . h($priorityColor) . '">' . h($priorityType) . '</font>';
+
+            // creator name
+            if (!empty($rec->admin_master)) {
+                $r['remidial_create_name'] = trim(($rec->admin_master->first_name ?? '') . ' ' . ($rec->admin_master->last_name ?? ''));
+            } else {
+                $r['remidial_create_name'] = '';
+            }
+
+            // responsibility person (attempt to lookup if only id present)
+            $respName = '';
+            if (!empty($rec->remidial_responsibility)) {
+                // if contain didn't bring the admin_master for responsibility, fetch
+                $resp = $this->fetchTable('AdminMasters')->find()
+                    ->select(['first_name', 'last_name'])
+                    ->where(['id' => $rec->remidial_responsibility])
+                    ->first();
+                if ($resp) {
+                    $respName = trim($resp->first_name . ' ' . $resp->last_name);
+                }
+            }
+            $r['responsibility_person'] = $respName;
+
+            // closure date
+            $r['closure'] = $fmt($rec->remidial_closure_date ?? null);
+
+            $admins[] = $r;
+        }
+
+        // If you prefer original behavior where adminArray is empty when count == 0:
+        if ($count === 0) {
+            $admins = [];
+        }
+
+        // Set variables used by your view (keeps same names as original)
+        $this->set('total', $count);
+        $this->set('admins', $admins);
+    }
+
 
     public function remidialBlock($id = null): void
     {
@@ -3800,7 +3869,7 @@ class ReportsController extends AppController
             $userData[] = $u;
         }
         $this->set('userDetail', $userData);
-
+        //dd($userData);
         /** -----------------------------
          *  Client and Report Details
          *  ----------------------------- */
@@ -3936,7 +4005,7 @@ class ReportsController extends AppController
         $res = $investigationEntity ? 'Update' : 'add';
 
         if (!$investigationEntity) {
-            $investigationEntity = $hsseInvestigationTable->newEntity();
+            $investigationEntity = $hsseInvestigationTable->newEmptyEntity();
         }
 
         // Set fields

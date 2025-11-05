@@ -40,7 +40,8 @@ Ext.onReady(function(){
 	}
 
 
-	function unblockSelected() {
+	function unblockSelected()
+	{
         var selectedArray = checkBox.getSelections();
         if (selectedArray.length === 0) {
             alert(select_one_record);
@@ -130,7 +131,7 @@ Ext.onReady(function(){
         proxy: new Ext.data.HttpProxy({
             url: AdminListPage + 'Reports/get_all_incident_list/' + report_id,
             headers: {'X-CSRF-Token': csrfToken}, method: 'POST'}),
-        reader: new Ext.data.JsonReader({
+        	reader: new Ext.data.JsonReader({
             root: 'admins',
             totalProperty: 'total',
             remoteSort: true,

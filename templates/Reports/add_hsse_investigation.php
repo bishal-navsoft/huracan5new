@@ -20,7 +20,29 @@
   <?php
     echo $this->Element('hssetab');
   ?>
-  <script language="javascript" type="text/javascript">
+  
+  <?php echo $this->Form->create(null, [
+            'url' => ['controller' => 'Reports', 'action' => 'addReportInvestigation'],
+            'name' => 'add_report_investigation_form',
+            'id' => 'add_report_investigation_form',
+            'method' => 'post',
+            'class' => 'investigation'
+        ]);
+
+        echo $this->Element('investigation_element');
+  ?>    
+   
+<div class="buttonpanel">
+  <input type="hidden" id='report_id'  name='report_id'  value='<?php echo $report_id; ?>' />       
+  <input type="hidden" id='id_holder'  name='id_holder'  value='<?php echo $id_holder; ?>' />
+  <span id='loader' style="float:left;font-size: 13px;"></span>
+  <?php if($is_add==1){?>
+    <input type="button" name="button" value="<?php echo $button; ?>" class="buttonsave" onclick="add_report_investigation('<?php echo $webroot.'Reports/save_hsse_investigation' ?>');"  />
+  <?php } ?>
+</div>
+<?php echo $this->Form->end(); ?>
+</section>
+<script language="javascript" type="text/javascript">
       $(document).ready(function() {
         $("#main").removeClass("selectedtab");
         $("#clientdata").removeClass("selectedtab");
@@ -52,45 +74,62 @@
           var idString=tr_id.toString();
           document.getElementById('id_holder').value=idString;  
         }
-        function add_seniority(){
-          var idString='<?php echo $edit_id; ?>';
-          document.getElementById('error_msg').innerHTML='';
-          var personal_info = jQuery.trim(document.getElementById('personal_data').value);
-          if(personal_info!=0){
-	          var usre_info=personal_info.split("~");
-            if(tr_id.length>0){
-		          for(var i=0;i<tr_id.length;i++){
-			          if(tr_id[i]==usre_info[3]){
-	                document.getElementById('error_msg').innerHTML=usre_info[0]+' already added in investigation team';
-			            return false;
-			          }
-		          }
-	          }
-            tr_id.push(usre_info[3]);
-	          var idString=tr_id.toString();
-	          document.getElementById('id_holder').value=idString;
-	          $('#seniority_holder').append('<tr id='+usre_info[3]+'><td width="30%" align="left" valign="middle"  >'+usre_info[0]+'</td><td width="30%" align="left" valign="middle"  >'+usre_info[2]+'</td><td width="30%" align="left" valign="middle"  >'+usre_info[1]+'</td><td width="30%" align="left" valign="middle"  >'+usre_info[4]+'</td><td width="10%" align="left" valign="middle"  ><a href="javascript:void(0);" onclick="remove_child('+usre_info[3]+');">Remove</a></td></tr>');
-	        }
-        }
-  </script>
-  <?php echo $this->Form->create(null, [
-            'url' => ['controller' => 'Reports', 'action' => 'addReportInvestigation'],
-            'name' => 'add_report_investigation_form',
-            'id' => 'add_report_investigation_form',
-            'method' => 'post',
-            'class' => 'investigation'
-        ]);
+        // function add_seniority(){
+        //   var idString='<?php echo $edit_id; ?>';
+        //   document.getElementById('error_msg').innerHTML='';
+        //   var personal_info = jQuery.trim(document.getElementById('personal_data').value);
+        //   if(personal_info!=0){
+	      //     var usre_info=personal_info.split("~");
+        //     if(tr_id.length>0){
+		    //       for(var i=0;i<tr_id.length;i++){
+			  //         if(tr_id[i]==usre_info[3]){
+	      //           document.getElementById('error_msg').innerHTML=usre_info[0]+' already added in investigation team';
+			  //           return false;
+			  //         }
+		    //       }
+	      //     }
+        //     tr_id.push(usre_info[3]);
+	      //     var idString=tr_id.toString();
+	      //     document.getElementById('id_holder').value=idString;
+	      //     $('#seniority_holder').append('<tr id='+usre_info[3]+'><td width="30%" align="left" valign="middle"  >'+usre_info[0]+'</td><td width="30%" align="left" valign="middle"  >'+usre_info[2]+'</td><td width="30%" align="left" valign="middle"  >'+usre_info[1]+'</td><td width="30%" align="left" valign="middle"  >'+usre_info[4]+'</td><td width="10%" align="left" valign="middle"  ><a href="javascript:void(0);" onclick="remove_child('+usre_info[3]+');">Remove</a></td></tr>');
+	      //   }
+        // }
+        function add_seniority() {
+          document.getElementById('error_msg').innerHTML = '';
 
-        echo $this->Element('investigation_element');
-  ?>    
-   
-<div class="buttonpanel">
-  <input type="hidden" id='report_id'  name='report_id'  value='<?php echo $report_id; ?>' />       
-  <input type="hidden" id='id_holder'  name='id_holder'  value='<?php echo $id_holder; ?>' />
-  <span id='loader' style="float:left;font-size: 13px;"></span>
-  <?php if($is_add==1){?>
-    <input type="button" name="button" value="<?php echo $button; ?>" class="buttonsave" onclick="add_report_investigation('<?php echo $webroot.'Reports/save_hsse_investigation' ?>');"  />
-  <?php } ?>
-</div>
-<?php echo $this->Form->end(); ?>
-</section>
+          var personal_info = jQuery.trim(document.getElementById('personal_data').value);
+          if (personal_info == 0) {
+            document.getElementById('error_msg').innerHTML = 'Please select a user.';
+            return;
+          }
+
+          var usre_info = personal_info.split("~");
+          // [0] = Full Name
+          // [1] = User Type (Role)
+          // [2] = Position
+          // [3] = ID
+          // [4] = Date (Seniority)
+
+          if (tr_id.includes(usre_info[3])) {
+            document.getElementById('error_msg').innerHTML =
+              usre_info[0] + ' already added in investigation team';
+            return;
+          }
+
+          tr_id.push(usre_info[3]);
+          document.getElementById('id_holder').value = tr_id.toString();
+
+          $('#seniority_holder').append(`
+            <tr id="${usre_info[3]}">
+              <td width="25%" align="left">${usre_info[0]}</td>  <!-- Name -->
+              <td width="25%" align="left">${usre_info[4]}</td>  <!-- Seniority -->
+              <td width="25%" align="left">${usre_info[1]}</td>  <!-- Role / User Type -->
+              <td width="25%" align="left">${usre_info[2]}</td>  <!-- Position -->
+              <td width="10%" align="left">
+                <a href="javascript:void(0);" onclick="remove_child(${usre_info[3]});">Remove</a>
+              </td>
+            </tr>
+          `);
+        }
+
+  </script>

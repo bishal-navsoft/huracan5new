@@ -25,7 +25,6 @@
 			'value' => $incident_id
 		]);
 	?>
-
  	<h2><?php echo $heading; ?>&nbsp;&nbsp;(<?php echo $report_number; ?>)</h2>
  	<br/>
 	<span><label><?PHP echo __("Incident No:");?></label><label><?php echo $incident_no; ?></label></span>
@@ -148,9 +147,10 @@
 		<input type="button" name="save" id="save" class="buttonsave" value="<?php echo $button; ?>" />
 	</div>
 </section>
-
+<script>
+var csrfToken = <?= json_encode($this->request->getAttribute('csrfToken')) ?>;
+</script>
 <script type="text/javascript">
-	var csrfToken = <?= json_encode($this->request->getParam('_csrfToken')) ?>;
 	$(document).ready(function () {
     // Highlight active tab
 		$("#main, #clientdata, #personnel, #investigation, #investigationdata, #remidialaction, #attachment, #clientfeedback, #view")
@@ -184,14 +184,16 @@
 	};
 	window.assign_id = function (type) {
 		var path = '<?php echo $webroot; ?>';
-		var passurl = "";
-
+		var iltype = "";
+		var id = "";
 		switch (type) {
 			case "incident_loss":
 				var incidentloss = $("#incident_loss").val();
+				console.log(incidentloss);
 				if (incidentloss != 0) {
 					$("#incident_category_section").html('<span><label>&nbsp;</label><label><img src="' + path + 'img/ajax-loader.gif" /></label></span><div class="clearflds"></div>');
-					passurl = "incident_loss&id=" + incidentloss;
+					iltype = "incident_loss";
+					id= incidentloss;
 				} else {
 					$("#incident_category_section").html("");
 					$("#incident_sub_category_section").html("");
@@ -203,18 +205,22 @@
 				var incidentcategory = $("#incident_category").val();
 				if (incidentcategory != 0) {
 					$("#incident_sub_category_section").html('<span><label>&nbsp;</label><label><img src="' + path + 'img/ajax-loader.gif" /></label></span><div class="clearflds"></div>');
-					passurl = "incident_category&id=" + incidentcategory;
+					// passurl = "incident_category&id=" + incidentcategory;
+					iltype = "incident_category";
+					id= incidentcategory;
 				} else {
 					$("#incident_sub_category_section").html("");
 					return false;
 				}
 				break;
 		}
-
 		$.ajax({
 			type: "POST",
 			url: path + "Reports/displaycontentforloss/",
-			data: "type=" + passurl,
+			data: {
+				type: iltype,
+				id: id
+			},
 			headers: {
 				'X-CSRF-Token': csrfToken
 			},
@@ -228,7 +234,7 @@
 						$("#incident_sub_category_section").html(splitvalue[1]);
 						break;
 				}
-			},
+			}
 		});
 		return false;
 	};

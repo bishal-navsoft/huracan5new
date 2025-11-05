@@ -33,7 +33,7 @@
        <div id="grid-paging" ><?php echo $this->Html->script('report_hsse_personel_grid'); ?></div>
  </section>
 <script language="JavaScript" type="text/javascript">
-var csrfToken = <?= json_encode($this->request->getParam('_csrfToken')) ?>;
+var csrfToken = <?= json_encode($this->request->getAttribute('csrfToken')); ?>;
 var action = "<?php echo $action;?>";
 var path = "<?php echo $webroot;?>";
 var AdminListPage = "<?php echo 'http://'.$_SERVER['HTTP_HOST'].$webroot; ?>";

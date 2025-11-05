@@ -38,3 +38,6 @@
         break;	
    }
 ?>
+<script>
+var csrfToken = <?= json_encode($this->request->getAttribute('csrfToken')); ?>;
+</script>

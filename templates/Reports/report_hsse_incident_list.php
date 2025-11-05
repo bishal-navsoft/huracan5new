@@ -42,7 +42,8 @@
             
  </section>
 <script language="JavaScript" type="text/javascript">
-var csrfToken = <?= json_encode($this->request->getParam('_csrfToken')) ?>;
+var csrfToken = <?= json_encode($this->request->getAttribute('csrfToken')); ?>;
+console.log(csrfToken);
 var action = "<?php echo $action;?>";
 var path = "<?php echo $webroot;?>";
 var AdminListPage = "<?php echo 'http://'.$_SERVER['HTTP_HOST'].$webroot; ?>";

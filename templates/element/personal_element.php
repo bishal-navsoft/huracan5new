@@ -1,6 +1,3 @@
-<script>
-var csrfToken = <?= json_encode($this->request->getAttribute('csrfToken')); ?>;
-</script>
 <?php
     echo $this->Form->create(null, [
         'url' => ['controller' => 'Reports', 'action' => 'add_report_personnel'],
@@ -84,3 +81,4 @@ var csrfToken = <?= json_encode($this->request->getAttribute('csrfToken')); ?>;
         <span id="loader" style="float:left;font-size: 13px;"></span><input type="button" name="save" id="save" class="buttonsave" onclick="add_report_personal();" value="<?php echo $button; ?>" />
     </div>
     <?php echo $this->Form->end(); ?>
+    
