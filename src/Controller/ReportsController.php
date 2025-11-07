@@ -31,14 +31,17 @@ use App\Model\Table\CountryTable;
 use App\Model\Table\HsseClientTable;
 use App\Model\Table\HsseIncidentTable;
 use App\Model\Table\ImmediateCausesTable;
+use App\Model\Table\ImmediateSubCauseTable;
 use App\Model\Table\LossesTable;
 use App\Model\Table\HsseInvestigationTable;
+use App\Model\Table\HsseInvestigationDataTable;
 use App\Model\Table\HssePersonnelTable;
 use App\Model\Table\IncidentCategoryTable;
 use App\Model\Table\IncidentSubCategoryTable;
 use App\Model\Table\PriorityTable;
 use App\Model\Table\HsseRemidialTable;
 use App\Model\Table\RemidialEmailListTable;
+use App\Model\Table\RootCauseTable;
 
 class ReportsController extends AppController
 {
@@ -56,14 +59,17 @@ class ReportsController extends AppController
     public HsseClientTable $HsseClient;
     public HsseIncidentTable $HsseIncident;
     public ImmediateCausesTable $ImmediateCauses;
+    public ImmediateSubCauseTable $ImmediateSubCause;
     public LossesTable $Losses;
     public HsseInvestigationTable $HsseInvestigation;
+    public HsseInvestigationDataTable $HsseInvestigationData;
     public HssePersonnelTable $HssePersonnel;
     public IncidentCategoryTable $IncidentCategory;
     public IncidentSubCategoryTable $IncidentSubCategory;
     public PriorityTable $Priority;
     public HsseRemidialTable $HsseRemidial;
     public RemidialEmailListTable $RemidialEmailList;
+    public RootCauseTable $RootCause;
 
     public function initialize(): void
     {
@@ -84,8 +90,10 @@ class ReportsController extends AppController
         $this->HsseClient = $this->fetchTable('HsseClient');
         $this->HsseIncident = $this->fetchTable('HsseIncident');
         $this->ImmediateCauses = $this->fetchTable('ImmediateCauses');
+        $this->ImmediateSubCause = $this->fetchTable('ImmediateSubCause');
         $this->Losses = $this->fetchTable('Losses');
         $this->HsseInvestigation = $this->fetchTable('HsseInvestigation');
+        $this->HsseInvestigationData = $this->fetchTable('HsseInvestigationData');
         $this->HssePersonnel = $this->fetchTable('HssePersonnel');
         $this->IncidentCategory = $this->fetchTable('IncidentCategory');
         $this->IncidentSubCategory = $this->fetchTable('IncidentSubCategory');
@@ -93,6 +101,7 @@ class ReportsController extends AppController
         $this->HsseRemidial = $this->fetchTable('HsseRemidial'); 
         $this->RemidialEmailList = $this->fetchTable('RemidialEmailList');
         $this->viewBuilder()->setLayout("after_adminlogin_template");
+        $this->RootCause = $this->fetchTable('RootCause');
     }
 
     // public $name = 'Reports';
@@ -923,19 +932,28 @@ class ReportsController extends AppController
         );
         $this->set("since_event", $reportdetail[0]["Report"]["since_event"]);
         $this->set("reportno", $reportdetail[0]["Report"]["report_no"]);
-        if ($reportdetail[0]["Report"]["closer_date"] != "0000-00-00") {
-            $clsdt = explode("-", $reportdetail[0]["Report"]["closer_date"]);
-            $closedt = $clsdt[2] . "/" . $clsdt[1] . "/" . $clsdt[0];
+        $closerDate = $reportdetail[0]["Report"]["closer_date"] ?? null;
+        if (!empty($closerDate) && $closerDate !== "0000-00-00") {
+            $date = new \Cake\I18n\Date($closerDate);
+            $closedt = $date->format('d/m/Y');
         } else {
             $closedt = "00/00/0000";
         }
         $this->set("closer_date", $closedt);
-        $incident_detail = $this->Incident->find("all", [
-            "conditions" => [
-                "Incident.id" => $reportdetail[0]["Report"]["incident_type"],
-            ],
-        ]);
-        $this->set("incident_type", $incident_detail[0]["Incident"]["type"]);
+        $this->Incident = $this->fetchTable('Incident');
+        $incident_detail = [];
+        $incidentId = $reportdetail[0]["Report"]["incident_type"] ?? null;
+        if ($incidentId) {
+            $incident_detail = $this->Incident->find()
+                ->where(['Incident.id' => $incidentId])
+                ->all()
+                ->toArray();
+        }
+        if (!empty($incident_detail)) {
+            $this->set("incident_type", $incident_detail[0]["Incident"]["type"]);
+        } else {
+            $this->set("incident_type", null);
+        }
         $user_detail = $this->AdminMaster->find("all", [
             "conditions" => [
                 "AdminMaster.id" => $reportdetail[0]["Report"]["created_by"],
@@ -3251,13 +3269,13 @@ class ReportsController extends AppController
                 'HsseRemidial.report_no' => $report_id,
                 'HsseRemidial.remedial_no' => $remedial_no
             ])
-            ->first();
-            
+            ->first(); 
         $reportData = $this->Reports->get($remidialData->report_no);
         $userData = $this->AdminMasters->get($remidialData->remidial_responsibility);
-        
-        $this->set('fullname', $userData->first_name . ' ' . $userData->last_name);
-        $this->set('report_no', $reportData->report_no);
+        $fullname=$userData->first_name . ' ' . $userData->last_name;
+        $repotId= $reportData->report_no;
+        $this->set('fullname', $fullname);
+        $this->set('report_no', $repotId);
         $this->set('remidialData', $remidialData);
     }
 
@@ -3660,7 +3678,7 @@ class ReportsController extends AppController
         $session->delete('value');
     }
 
-    public function get_all_remidial_email_list($report_id)
+    /*public function get_all_remidial_email_list($report_id)
     {
         Configure::write("debug", "2"); //set debug to 0 for this function because debugging info breaks the XMLHttpRequest
         $this->layout = "ajax"; //this tells the controller to use the Ajax layout instead of the default layout (since we're using ajax . . .)
@@ -3803,7 +3821,128 @@ class ReportsController extends AppController
         $this->set("total", $count); //send total to the view
         $this->set("admins", $adminArray); //send products to the view
         //$this->set('status', $action);
+    }*/
+    public function getAllRemidialEmailList($reportId = null)
+    {
+        $this->request->allowMethod(['get', 'ajax']);
+        $this->viewBuilder()->setLayout('ajax');
+
+        $this->_checkAdminSession();
+
+        $this->HsseRemidial = $this->fetchTable('HsseRemidial'); 
+        $this->RemidialEmailList = $this->fetchTable('RemidialEmailList');
+        $this->AdminMasters = $this->fetchTable('AdminMasters');
+
+        $condition = [
+            'RemidialEmailList.report_id' => $reportId,
+            'RemidialEmailList.report_type' => 'hsse'
+        ];
+
+        $filter = $this->request->getQuery('filter');
+        $value = $this->request->getQuery('value');
+
+        if ($filter && $value) {
+            switch ($filter) {
+                case 'email_date':
+                    $exploded = explode('/', $value);
+                    if (count($exploded) === 3) {
+                        $day = $exploded[0];
+                        $month = date('m', strtotime($exploded[1]));
+                        $year = '20' . $exploded[2];
+                        $createOn = "$year-$month-$day";
+                        $condition['RemidialEmailList.email_date'] = $createOn;
+                    }
+                    break;
+
+                case 'email':
+                    $condition['RemidialEmailList.email LIKE'] = "%$value%";
+                    break;
+
+                case 'responsibility_person':
+                    $nameParts = explode(' ', trim($value));
+                    $firstName = $nameParts[0] ?? '';
+                    $lastName = end($nameParts);
+
+                    $user = $this->AdminMasters->find()
+                        ->select(['id'])
+                        ->where([
+                            'first_name LIKE' => "%$firstName%",
+                            'last_name LIKE' => "%$lastName%"
+                        ])
+                        ->first();
+
+                    if ($user) {
+                        $condition['RemidialEmailList.send_to'] = $user->id;
+                    }
+                    break;
+            }
+        }
+
+        // Pagination
+        $limit = $this->request->getQuery('limit');
+        $start = $this->request->getQuery('start');
+        $query = $this->RemidialEmailList->find()
+            ->where($condition)
+            ->order(['RemidialEmailList.id' => 'DESC']);
+
+        if ($limit && $limit !== 'all') {
+            $query->limit((int)$limit)->offset((int)$start);
+        }
+
+        $records = $query->all();
+        $count = $query->count();
+
+        $results = [];
+        foreach ($records as $rec) {
+            $recArray = $rec->toArray();
+            $recArray['status_value'] = $rec->status === 'N' ? 'Not Sent' : 'Sent';
+
+            $remidial = $this->HsseRemidial->find()
+                ->where([
+                    'report_no' => $rec->report_id,
+                    'remedial_no' => $rec->remedial_no
+                ])
+                ->first();
+
+            if ($remidial) {
+                if (!empty($remidial->remidial_reminder_data)) {
+                    $recArray['reminder_data'] = $remidial->remidial_reminder_data instanceof \DateTimeInterface
+                        ? $remidial->remidial_reminder_data->format('d/M/y')
+                        : date('d/M/y', strtotime((string)$remidial->remidial_reminder_data));
+                }
+
+                if (!empty($remidial->remidial_create)) {
+                    $recArray['create_on'] = $remidial->remidial_create instanceof \DateTimeInterface
+                        ? $remidial->remidial_create->format('d/M/y')
+                        : date('d/M/y', strtotime((string)$remidial->remidial_create));
+                }
+            }
+
+            $responsible = $this->AdminMasters->find()
+                ->select(['first_name', 'last_name'])
+                ->where(['id' => $rec->send_to])
+                ->first();
+
+            $recArray['responsibility_person'] = $responsible
+                ? $responsible->first_name . ' ' . $responsible->last_name
+                : '';
+
+            if (!empty($rec->email_date)) {
+                $recArray['email_date'] = $rec->email_date instanceof \DateTimeInterface
+                    ? $rec->email_date->format('d/M/y')
+                    : date('d/M/y', strtotime((string)$rec->email_date));
+            }
+
+            $results[] = $recArray;
+        }
+
+        $this->set([
+            'total' => $count,
+            'admins' => $results,
+            '_serialize' => ['total', 'admins']
+        ]);
     }
+
 
     public function remidialEmailDelete(): void
     {
@@ -4112,7 +4251,7 @@ class ReportsController extends AppController
         $this->set('report_val', $report_id);
     }
 
-    public function get_all_hsse_investigation_data_list($report_id)
+    /*public function get_all_hsse_investigation_data_list($report_id)
     {
         Configure::write("debug", "2");
         $this->layout = "ajax";
@@ -4280,7 +4419,7 @@ class ReportsController extends AppController
 			$condition .= "AND ucase(HsseInvestigationData.".$_REQUEST['filter'].") like '".$_REQUEST['value']."%'";	
 		}
 		*/
-        $limit = null;
+        /*$limit = null;
         if ($_REQUEST["limit"] == "all") {
         } else {
             $limit = $_REQUEST["start"] . ", " . $_REQUEST["limit"];
@@ -4395,7 +4534,201 @@ class ReportsController extends AppController
 
         $this->set("admins", $adminArray); //send products to the view
         //$this->set('status', $action);
+    }*/
+    public function getAllHsseInvestigationDataList($reportId): void
+    {
+        $this->request->allowMethod(['get', 'post', 'ajax']);
+        $this->viewBuilder()->setLayout('ajax');
+        $this->_checkAdminSession();
+
+        $query = $this->HsseInvestigationData->find()
+            ->where([
+                'HsseInvestigationData.report_id' => $reportId,
+                'HsseInvestigationData.isdeleted' => 'N'
+            ]);
+
+        $filter = $this->request->getQuery('filter') ?? $this->request->getData('filter');
+        $valueRaw = $this->request->getQuery('value') ?? $this->request->getData('value');
+        $value = is_string($valueRaw) ? trim($valueRaw) : '';
+
+        if (!empty($filter)) {
+            switch ($filter) {
+                case 'incident_loss':
+                    $loss = $this->Losses->find()
+                        ->select(['id'])
+                        ->where(['type' => $value])
+                        ->first();
+
+                    if ($loss) {
+                        $incidentIds = $this->HsseIncident->find()
+                            ->select(['id'])
+                            ->where([
+                                'incident_loss' => $loss->id,
+                                'report_id' => $reportId
+                            ])
+                            ->all()
+                            ->extract('id')
+                            ->toList();
+
+                        if ($incidentIds) {
+                            $query->where(['HsseInvestigationData.incident_id IN' => $incidentIds]);
+                        }
+                    }
+                    break;
+
+                case 'imd_cause_name':
+                    $immediateCause = $this->ImmediateCauses->find()
+                        ->select(['id'])
+                        ->where(['type' => $value])
+                        ->first();
+
+                    $immediateSubCause = $this->ImmediateSubCause->find()
+                        ->select(['id'])
+                        ->where(['type' => $value])
+                        ->first();
+
+                    if ($immediateCause || $immediateSubCause) {
+                        $investigationIds = [];
+
+                        $investigations = $this->HsseInvestigationData->find()
+                            ->where(['report_id' => $reportId])
+                            ->all();
+
+                        foreach ($investigations as $inv) {
+                            $immediateIds = array_filter(explode(',', (string)$inv->immediate_cause));
+
+                            if (
+                                ($immediateCause && in_array($immediateCause->id, $immediateIds)) ||
+                                ($immediateSubCause && in_array($immediateSubCause->id, $immediateIds))
+                            ) {
+                                $investigationIds[] = $inv->id;
+                            }
+                        }
+
+                        if ($investigationIds) {
+                            $query->where(['HsseInvestigationData.id IN' => $investigationIds]);
+                        }
+                    }
+                    break;
+
+                case 'root_cause_list':
+                    $rootCause = $this->RootCause->find()
+                        ->select(['id'])
+                        ->where(['type' => $value])
+                        ->first();
+
+                    if ($rootCause) {
+                        $investigationIds = [];
+
+                        $investigations = $this->HsseInvestigationData->find()
+                            ->where(['report_id' => $reportId])
+                            ->all();
+
+                        foreach ($investigations as $inv) {
+                            $rootIds = array_filter(explode(',', (string)$inv->root_cause_id));
+                            if (in_array($rootCause->id, $rootIds)) {
+                                $investigationIds[] = $inv->id;
+                            }
+                        }
+
+                        if ($investigationIds) {
+                            $query->where(['HsseInvestigationData.id IN' => $investigationIds]);
+                        }
+                    }
+                    break;
+            }
+        }
+
+        // Pagination (limit/start)
+        $start = (int)($this->request->getQuery('start') ?? 0);
+        $limit = $this->request->getQuery('limit');
+
+        if ($limit && $limit !== 'all') {
+            $query->limit((int)$limit)->offset($start);
+        }
+
+        $query->orderDesc('HsseInvestigationData.id');
+
+        $count = $query->count();
+        $records = $query->all();
+
+        $adminArray = [];
+        foreach ($records as $record) {
+            $data = $record->toArray();
+
+            // Status flags
+            if ($record->isblocked === 'N') {
+                $data['blockHideIndex'] = true;
+                $data['unblockHideIndex'] = false;
+                $data['isdeletdHideIndex'] = true;
+            } else {
+                $data['blockHideIndex'] = false;
+                $data['unblockHideIndex'] = true;
+                $data['isdeletdHideIndex'] = false;
+            }
+
+            // Incident & Loss type
+            $incident = $this->HsseIncident->find()
+                ->where(['HsseIncident.id' => $record->incident_id])
+                ->first();
+
+            $lossType = '';
+            if ($incident) {
+                $loss = $this->Losses->find()
+                    ->where(['id' => $incident->incident_loss])
+                    ->first();
+                $lossType = $loss ? $loss->type : '';
+            }
+            $data['incident_loss'] = $lossType;
+
+            // Immediate cause
+            $immediateIds = array_filter(explode(',', (string)$record->immediate_cause));
+            $imdCauseName = '';
+
+            if (!empty($immediateIds)) {
+                $mainCause = $this->ImmediateCauses->find()
+                    ->where(['id' => $immediateIds[0]])
+                    ->first();
+                $subCause = null;
+
+                if (isset($immediateIds[1])) {
+                    $subCause = $this->ImmediateSubCause->find()
+                        ->where(['id' => $immediateIds[1]])
+                        ->first();
+                }
+
+                $imdCauseName = $mainCause ? $mainCause->type : '';
+                if ($subCause) {
+                    $imdCauseName .= "<br/>" . $subCause->type;
+                }
+            }
+            $data['imd_cause_name'] = $imdCauseName;
+
+            // Root causes
+            $rootIds = array_filter(explode(',', (string)$record->root_cause_id));
+            $rootCauseList = [];
+
+            if (!empty($rootIds)) {
+                $rootCauses = $this->RootCause->find()
+                    ->where(['id IN' => $rootIds])
+                    ->all();
+
+                foreach ($rootCauses as $root) {
+                    $rootCauseList[] = $root->type;
+                }
+            }
+
+            $data['root_cause_list'] = implode('<br/>', $rootCauseList);
+
+            $adminArray[] = $data;
+        }
+
+        $this->set('total', $count);
+        $this->set('admins', $adminArray);
+        $this->viewBuilder()->setOption('serialize', ['total', 'admins']);
+
     }
+
 
     public function investigationDataBlock($id = null): void
     {
@@ -4456,248 +4789,175 @@ class ReportsController extends AppController
     }
 
     public function addInvestigationDataAnalysis(
-        $report_id,
-        $incident_id = null,
-        $investigation_id = null
+        string $report_id,
+        ?string $incident_id = null,
+        ?string $investigation_id = null
     ): void {
+        
         $this->_checkAdminSession();
         $this->_getRoleMenuPermission();
         $this->grid_access();
         $this->viewBuilder()->setLayout('after_adminlogin_template');
-        $immediateCauseDetail = $this->ImmediateCauses->find("all");
-        $this->set("immediateCauseDetail", $immediateCauseDetail);
-        $rootParrentCauseData = $this->RootCause->find("all", [
-            "conditions" => ["parrent_id" => 0],
-        ]);
-        $this->set("rootParrentCauseData", $rootParrentCauseData);
-        $remidialData = $this->HsseRemidial->find("all", [
-            "conditions" => [
-                "HsseRemidial.report_no" => base64_decode($report_id),
-                "HsseRemidial.isblocked" => "N",
-                "HsseRemidial.isdeleted" => "N",
-            ],
-        ]);
-        $this->set("remidialData", $remidialData);
-        $reportdetail = $this->Report->find("all", [
-            "conditions" => ["Report.id" => base64_decode($report_id)],
-        ]);
-        $this->set("report_id", base64_decode($report_id));
-        $this->set("report_number", $reportdetail[0]["Report"]["report_no"]);
-        $incidentdetail = $this->HsseIncident->find("all", [
-            "conditions" => [
-                "HsseIncident.report_id" => base64_decode($report_id),
-                "HsseIncident.isblocked" => "N",
-                "HsseIncident.isdeleted" => "N",
-            ],
-        ]);
 
-        $this->set("incidentdetail", $incidentdetail);
-        $clientdetail = $this->HsseClient->find("all", [
-            "conditions" => [
-                "HsseClient.report_id" => base64_decode($report_id),
+        $reportIdDecoded = base64_decode($report_id);
+
+        $immediateCauseDetail = $this->ImmediateCauses->find('all')->toArray();
+        $this->set(compact('immediateCauseDetail'));
+
+        $rootParrentCauseData = $this->RootCause->find('all', [
+            'conditions' => ['parrent_id' => 0],
+        ])->toArray();//dd($rootParrentCauseData);
+        $this->set(compact('rootParrentCauseData'));
+
+        $remidialData = $this->HsseRemidial->find('all', [
+            'conditions' => [
+                'HsseRemidial.report_no' => $reportIdDecoded,
+                'HsseRemidial.isblocked' => 'N',
+                'HsseRemidial.isdeleted' => 'N',
             ],
-        ]);
-        if (count($clientdetail) > 0) {
-            if ($clientdetail[0]["HsseClient"]["clientreviewed"] == 3) {
-                $this->set("client_feedback", 1);
-            } elseif ($clientdetail[0]["HsseClient"]["clientreviewed"] != 3) {
-                $this->set("client_feedback", 0);
+        ])->toArray();//dd($remidialData);
+        $this->set(compact('remidialData'));
+
+        $reportdetail = $this->Reports->find()
+            ->where(['Reports.id' => $reportIdDecoded])
+            ->first();
+
+        $report_number = $reportdetail->report_no ?? '';
+        $this->set(compact('report_number'));
+        $this->set('report_id', $reportIdDecoded);
+
+        $edit_investigation_id = $this->request->getQuery('edit_investigation_id')
+            ?? $this->request->getData('edit_investigation_id')
+            ?? null;
+        $this->set('edit_investigation_id', $edit_investigation_id);
+        //dd($reportIdDecoded);
+        
+        $incidentdetail = $this->HsseIncident->find('all', [
+            'conditions' => [
+                'HsseIncident.report_id' => $reportIdDecoded,
+                'HsseIncident.isblocked' => 'N',
+                'HsseIncident.isdeleted' => 'N',
+            ],
+        ])->toArray();//dd($incidentdetail);
+        $this->set(compact('incidentdetail'));
+
+        $clientdetail = $this->HsseClient->find('all', [
+            'conditions' => ['HsseClient.report_id' => $reportIdDecoded],
+        ])->toArray();
+
+        $client_feedback = (!empty($clientdetail) && $clientdetail[0]->clientreviewed == 3) ? 1 : 0;
+        $this->set(compact('client_feedback'));
+
+        if (!empty($investigation_id)) {
+            $investigationIdDecoded = base64_decode($investigation_id);
+
+            $investigationDetail = $this->HsseInvestigationData->find('all', [
+                'conditions' => ['HsseInvestigationData.id' => $investigationIdDecoded],
+            ])->contain(['HsseIncident.Loss'])->toArray();
+
+            if (empty($investigationDetail)) {
+                $this->Flash->error(__('Invalid investigation record.'));
+                $this->redirect(['action' => 'index']);
+                return;
             }
-        } else {
-            $this->set("client_feedback", 0);
+
+            $data = $investigationDetail[0]['HsseInvestigationData'];
+
+            // Set main investigation info
+            $this->set([
+                'investigation_no' => $data['investigation_no'] ?? '',
+                'ltype' => $investigationDetail[0]['HsseIncident']['Loss']['type'] ?? '',
+                'incident_summary' => $investigationDetail[0]['HsseIncident']['incident_summary'] ?? '',
+                'comment' => $data['comments'] ?? '',
+            ]);
+
+            // Handle Immediate Cause & Sub-Cause
+            $explode_immd_cause = explode(',', $data['immediate_cause'] ?? '0');
+            $immediate_cause = (int)($explode_immd_cause[0] ?? 0);
+            $immediate_sub_cause = (int)($explode_immd_cause[1] ?? 0);
+            $this->set(compact('immediate_cause', 'immediate_sub_cause'));
+
+            if ($immediate_cause) {
+                $immediateSubCauseList = $this->ImmediateSubCause->find('all', [
+                    'conditions' => ['imm_cau_id' => $immediate_cause],
+                ])->toArray();
+                $this->set(compact('immediateSubCauseList'));
+            }
+
+            // Handle Remedial Actions
+            $remedialIds = $data['remedila_action_id'] ?? '';
+            $remidialList = [];
+            if (!empty($remedialIds)) {
+                $remidialList = $this->HsseRemidial->find('all', [
+                    'conditions' => ['HsseRemidial.id IN' => explode(',', $remedialIds)],
+                ])->toArray();
+            }
+            $this->set(compact('remidialList'));
+
+            // Handle Root Causes
+            $explode_root_cause = !empty($data['root_cause_id'])
+                ? explode(',', $data['root_cause_id'])
+                : [];
+
+            $rootParrentCausevalue = $explode_root_cause[0] ?? 0;
+            $this->set(compact('rootParrentCausevalue', 'explode_root_cause'));
+
+            $childRoot = [];
+            if (!empty($explode_root_cause)) {
+                foreach ($explode_root_cause as $rootId) {
+                    $childRoot[$rootId] = $this->RootCause->find('all', [
+                        'conditions' => ['RootCause.parrent_id' => $rootId],
+                    ])->toArray();
+                }
+            }
+            $this->set(compact('childRoot'));
+            $comments = '';
+            if (!empty($investigationData)) {
+                $comments = $investigationData->comments ?? '';
+            }
+            $this->set(compact('comments'));
+            //dd($childRoot);
+            // Final View Variables for Edit
+            $this->set([
+                'heading' => 'Edit Investigation Data Analysis',
+                'button' => 'Update',
+                'edit_investigation_id' => $investigationIdDecoded,
+                'disabled' => 'disabled="disabled"',
+                'edit_incident_id' => base64_decode($incident_id ?? ''),
+                'incident_no' => $data['incident_no'] ?? '',
+                'id_holder' => $data['remedila_action_id'] ?? '',
+                'idContent' => $data['remedila_action_id'] ?? '',
+                'tr_id' => !empty($remedialIds)
+                    ? implode(',', array_map(fn($id) => 'tr' . $id, explode(',', $remedialIds)))
+                    : '',
+            ]);
         }
 
-        if ($investigation_id != "") {
-            $investigationDetail = $this->HsseInvestigationData->find("all", [
-                "conditions" => [
-                    "HsseInvestigationData.id" => base64_decode(
-                        $investigation_id
-                    ),
-                ],
-                "recursive" => 2,
+        else {
+            $this->set([
+                'investigation_no' => '',
+                'ltype' => '',
+                'incident_summary' => '',
+                'heading' => 'Add Investigation Data Analysis',
+                'comments' => '',
+                'button' => 'Submit',
+                'edit_investigation_id' => 0,
+                'disabled' => '',
+                'edit_incident_id' => 0,
+                'remidialList' => [],
+                'immediate_cause' => 0,
+                'immediate_sub_cause' => 0,
+                'parrentRoot' => [],
+                'rootParrentCausevalue' => 0,
+                'explode_root_cause' => [],
+                'incident_no' => 0,
+                'id_holder' => 0,
+                'idContent' => '',
+                'tr_id' => '',
             ]);
-            $this->set(
-                "investigation_no",
-                $investigationDetail[0]["HsseInvestigationData"][
-                    "investigation_no"
-                ]
-            );
-            $this->set(
-                "ltype",
-                $investigationDetail[0]["HsseIncident"]["Loss"]["type"]
-            );
-            $this->set(
-                "incident_summary",
-                $investigationDetail[0]["HsseIncident"]["incident_summary"]
-            );
-            $this->set(
-                "comment",
-                $investigationDetail[0]["HsseInvestigationData"]["comments"]
-            );
-            $explode_immd_cause = explode(
-                ",",
-                $investigationDetail[0]["HsseInvestigationData"][
-                    "immediate_cause"
-                ]
-            );
-
-            if ($explode_immd_cause[0] != 0) {
-                $this->set("immediate_cause", $explode_immd_cause[0]);
-                if (isset($explode_immd_cause[1])) {
-                    $immediateSubCauseList = $this->ImmediateSubCause->find(
-                        "all",
-                        [
-                            "conditions" => [
-                                "imm_cau_id" => $explode_immd_cause[0],
-                            ],
-                        ]
-                    );
-                    $this->set("immediateSubCauseList", $immediateSubCauseList);
-                    $this->set("immediate_sub_cause", $explode_immd_cause[1]);
-                } else {
-                    $this->set("immediate_sub_cause", 0);
-                }
-            } else {
-                $this->set("immediate_cause", 0);
-                $this->set("immediate_sub_cause", 0);
-            }
-
-            if (
-                $investigationDetail[0]["HsseInvestigationData"][
-                    "remedila_action_id"
-                ] != ""
-            ) {
-                $condition =
-                    "HsseRemidial.id IN (" .
-                    $investigationDetail[0]["HsseInvestigationData"][
-                        "remedila_action_id"
-                    ] .
-                    ")";
-                $remidialList = $this->HsseRemidial->find("all", [
-                    "conditions" => $condition,
-                ]);
-                $this->set("remidialList", $remidialList);
-            } else {
-                $this->set("remidialList", []);
-            }
-            $childRoot = [];
-            if (
-                $investigationDetail[0]["HsseInvestigationData"][
-                    "root_cause_id"
-                ] != ""
-            ) {
-                $explode_root_cause = explode(
-                    ",",
-                    $investigationDetail[0]["HsseInvestigationData"][
-                        "root_cause_id"
-                    ]
-                );
-                $this->set("rootParrentCausevalue", $explode_root_cause[0]);
-                $condition =
-                    "RootCause.id IN (" .
-                    $investigationDetail[0]["HsseInvestigationData"][
-                        "root_cause_id"
-                    ] .
-                    ")";
-                $rootCauseList = $this->RootCause->find("all", [
-                    "conditions" => $condition,
-                ]);
-                $this->set(
-                    "parrentRoot",
-                    explode(
-                        ",",
-                        $investigationDetail[0]["HsseInvestigationData"][
-                            "root_cause_id"
-                        ]
-                    )
-                );
-                for ($r = 0; $r < count($rootCauseList); $r++) {
-                    $childRoot[
-                        $rootCauseList[$r]["RootCause"]["id"]
-                    ][] = $this->RootCause->find("all", [
-                        "conditions" => [
-                            "RootCause.parrent_id" =>
-                                $rootCauseList[$r]["RootCause"]["id"],
-                        ],
-                    ]);
-                }
-                $this->set("childRoot", $childRoot);
-                $this->set("explode_root_cause", $explode_root_cause);
-            } else {
-                $this->set("explode_root_cause", []);
-            }
-            $this->set(
-                "comments",
-                $investigationDetail[0]["HsseInvestigationData"]["comments"]
-            );
-            $this->set("heading", "Edit Investigation Data Analysis");
-            $this->set("button", "Update");
-            $this->set(
-                "edit_investigation_id",
-                base64_decode($investigation_id)
-            );
-            $this->set("disabled", 'disabled="disabled"');
-            $this->set("edit_incident_id", base64_decode($incident_id));
-            $this->set(
-                "incident_no",
-                $investigationDetail[0]["HsseInvestigationData"]["incident_no"]
-            );
-            if (
-                $investigationDetail[0]["HsseInvestigationData"][
-                    "remedila_action_id"
-                ] != ""
-            ) {
-                $tr_id = [];
-                $idc = explode(
-                    ",",
-                    $investigationDetail[0]["HsseInvestigationData"][
-                        "remedila_action_id"
-                    ]
-                );
-                for ($c = 0; $c < count($idc); $c++) {
-                    $tr_id[] = "tr" . $idc[$c];
-                }
-
-                $this->set("tr_id", implode(",", $tr_id));
-                $this->set(
-                    "idContent",
-                    $investigationDetail[0]["HsseInvestigationData"][
-                        "remedila_action_id"
-                    ]
-                );
-            } else {
-                $this->set("idContent", "");
-                $this->set("tr_id", "");
-            }
-
-            $this->set(
-                "id_holder",
-                $investigationDetail[0]["HsseInvestigationData"][
-                    "remedila_action_id"
-                ]
-            );
-        } else {
-            $this->set("investigation_no", "");
-            $this->set("ltype", "");
-            $this->set("incident_summary", "");
-            $this->set("heading", "Add Investigation Data Analysis");
-            $this->set("comments", "");
-            $this->set("button", "Submit");
-            $this->set("", 0);
-            $this->set("disabled", "");
-            $this->set("edit_incident_id", 0);
-            $this->set("remidialList", []);
-            $this->set("immediate_cause", 0);
-            $this->set("immediate_sub_cause", 0);
-            $this->set("parrentRoot", []);
-            $this->set("rootParrentCausevalue", 0);
-            $this->set("explode_root_cause", []);
-            $this->set("incident_no", 0);
-            $this->set("id_holder", 0);
-            $this->set("idContent", "");
-            $this->set("tr_id", "");
         }
     }
+
 
     public function displayincidentdetail(): void
     {
@@ -4743,18 +5003,18 @@ class ReportsController extends AppController
         $this->viewBuilder()->setLayout('ajax');
         $this->autoRender = false;
         
-        $data = $this->request->getData();
+        $data = $this->request->getData();//dd($data);
         $rootChildCauseData = $this->RootCause->find()
             ->where(['parrent_id' => $data['id']])
             ->all();
-            
+        //dd($rootChildCauseData);    
         if (!$rootChildCauseData->isEmpty()) {
             $this->set('rootChildCauseData', $rootChildCauseData);
             $this->set('parrentid', $data['id']);
             $this->autoRender = true;
         }
     }
-
+    
     public function saveDateAnalysis(): void
     {
         $this->request->allowMethod(['post']);
@@ -4762,44 +5022,48 @@ class ReportsController extends AppController
         $this->autoRender = false;
 
         $data = $this->request->getData();
-        
-        if ($data['investigation_id'] != 0) {
+
+        // Determine if we’re adding or updating
+        if (!empty($data['investigation_id']) && $data['investigation_id'] != 0) {
             $investigation = $this->HsseInvestigationData->get($data['investigation_id']);
             $res = 'update';
         } else {
-            $investigation = $this->HsseInvestigationData->newEntity();
+            $investigation = $this->HsseInvestigationData->newEntity([]);
             $res = 'add';
         }
-        
+
+        // Handle remedial holder string cleanup
         $rH = '';
         if (!empty($data['remidial_holder'])) {
             $rH = implode(',', array_values(array_unique(explode(',', $data['remidial_holder']))));
-            if ($rH && $rH[0] == ',') {
-                $rH = substr($rH, 1);
-            }
+            $rH = ltrim($rH, ',');
         }
 
+        // Prepare entity data
         $investigationData = [
-            'investigation_no' => $data['investigation_no'],
-            'incident_no' => $data['incident_no'],
-            'report_id' => $data['report_id'],
-            'incident_id' => $data['incident_val'],
-            'immediate_cause' => $data['causeCont'],
-            'root_cause_id' => $data['rootCauseCont'],
+            'investigation_no'   => $data['investigation_no'] ?? '',
+            'incident_no'        => $data['incident_no'] ?? '',
+            'report_id'          => $data['report_id'] ?? null,
+            'incident_id'        => $data['incident_val'] ?? null,
+            'immediate_cause'    => $data['causeCont'] ?? '',
+            'root_cause_id'      => $data['rootCauseCont'] ?? '',
             'remedila_action_id' => $rH,
-            'comments' => $data['comments'] ?? ''
+            'comments'           => $data['comments'] ?? '',
+            'isdeleted'          => 'N',
+            'isblocked'          => 'N',
         ];
 
+        // Patch and save
         $investigation = $this->HsseInvestigationData->patchEntity($investigation, $investigationData);
 
         if ($this->HsseInvestigationData->save($investigation)) {
-            if ($res == 'add') {
-                $lastInvestigationId = base64_encode($investigation->id);
-            } else {
-                $lastInvestigationId = base64_encode($data['investigation_id']);
-            }
-            $reportId = base64_encode($data['report_id']);
-            $incidentId = base64_encode($data['incident_val']);
+            // Prepare encoded IDs for redirect
+            $lastInvestigationId = base64_encode((string)(
+                $res === 'add' ? $investigation->id : $data['investigation_id']
+            ));
+            $reportId   = base64_encode((string)$data['report_id']);
+            $incidentId = base64_encode((string)$data['incident_val']);
+
             echo $res . '~' . $reportId . '~' . $incidentId . '~' . $lastInvestigationId;
         } else {
             echo 'fail~0~0~0';
@@ -6103,5 +6367,7 @@ class ReportsController extends AppController
             return;
         }
     }
+
+
 }
 ?>

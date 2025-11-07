@@ -1,4 +1,8 @@
-   <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<?= $this->Html->css('reset.css') ?>
+<?= $this->Html->css('screen.css') ?>
+<link rel="stylesheet" href="<?= $this->Url->build('/js/ext-2.2/resources/css/ext-all.css') ?>" />
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>Huracan</title></head><body style="padding:0; margin:0;"><table width="100%" border="0" cellspacing="0" cellpadding="0">
   <tr><td align="left" valign="top" style="font-size:0;"><img src="<?php echo $this->webroot ;?>images/spacer.png" height="20" width="1" /></td>
@@ -32,10 +36,15 @@
                 <td align="left" valign="top" style="font-family: Tahoma, Geneva, sans-serif; font-size:13px; color:#333;"><p>Hello &nbsp;&nbsp;<strong><?php echo ucwords($fullname); ?>,</strong></p><br/>
                   <p><strong>ReportNo:&nbsp;<?php echo $report_no ;?></p></br>
                   <p>Report Type:&nbsp; HSSE</p></br>
-                  <p>Your Remedial Action No:&nbsp;<?php echo $remidialData[0]['HsseRemidial']['remedial_no'];?></p></br>
-                  <p>Summary: &nbsp;<?php echo $remidialData[0]['HsseRemidial']['remidial_summery'];?></p></br>
+                  <p>Your Remedial Action No:&nbsp;<?php echo $remidialData->remedial_no; ?></p></br>
+                  <p>Summary: &nbsp;<?php echo $remidialData->remidial_summery; ?></p></br>
                   
-                  <p>Closure Date:&nbsp;<?php if($remidialData[0]['HsseRemidial']['remidial_closure_date']!='0000-00-00'){ echo $remidialData[0]['HsseRemidial']['remidial_closure_date']; }?></p></br>
+                  <p>Closure Date:&nbsp;<?php 
+                        if ($remidialData->remidial_closure_date && $remidialData->remidial_closure_date != '0000-00-00') {
+                            echo $remidialData->remidial_closure_date;
+                        }
+                        ?>
+                  </p></br>
                  </td>
                 </tr>
               <tr>

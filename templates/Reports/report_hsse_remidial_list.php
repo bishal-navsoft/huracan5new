@@ -69,19 +69,20 @@
    var act = "<?php echo __('Active');?>";
    var inact = "<?php echo __('Inactive');?>";
 
-   if (typeof $ !== 'undefined' && $.ajaxSetup) {
-       $.ajaxSetup({
-           headers: { 'X-CSRF-Token': csrfToken }
-       });
-   }
+    if (typeof $ !== 'undefined' && $.ajaxSetup) {
+        $.ajaxSetup({
+            headers: { 'X-CSRF-Token': csrfToken }
+        });
+    }
 
-   if (typeof Ext !== 'undefined' && Ext.Ajax) {
-       Ext.Ajax.defaultHeaders = {
-           'X-CSRF-Token': csrfToken
-       };
-   }
+    if (typeof Ext !== 'undefined' && Ext.Ajax) {
+        Ext.Ajax.defaultHeaders = {
+            'X-CSRF-Token': csrfToken
+        };
+    }
 
 </script>
+
 <aside>
 <?php echo $this->Element('left_menu'); ?>
 </aside>

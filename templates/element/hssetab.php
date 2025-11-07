@@ -1,20 +1,29 @@
-<script type="text/javascript" src="<?php echo $this->request->getAttribute('webroot') ?>js/fancybox/jquery.mousewheel-3.0.4.pack.js"></script>
-<script type="text/javascript" src="<?php echo $this->request->getAttribute('webroot') ?>js/fancybox/jquery.fancybox-1.3.4.js"></script>
-<link rel="stylesheet" type="text/css" href="<?php echo $this->request->getAttribute('webroot') ?>js/fancybox/jquery.fancybox-1.3.4.css" media="screen" />
+<!-- <script type="text/javascript" src="<?php echo $this->request->getAttribute('webroot') ?>js/fancybox/jquery.mousewheel-3.0.4.pack.js"></script> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.css" />
 
 <script  language="javascript" type="text/javascript">
-  function open_lightbox(id)
-          {
-	jQuery.fancybox({
-			'autoScale': true,
-			'transitionIn'		: 'fade',
-			'transitionOut'		: 'fade',
-			'href'				:"<?php echo $this->request->getAttribute('webroot'); ?>Reports/print_view/"+id,
-			'hideOnOverlayClick' : false,
-			'overlayShow'   :   false
-			
-		});
-       }
+    function open_lightbox(id)
+    {
+	    $.fancybox.open({
+            src: path + "Reports/remidial_email_view/" + id + "/" + remedial_no + "/" + report_id,
+            type: 'iframe',
+            opts: {
+                animationEffect: "fade",
+                buttons: ["close"],
+                infobar: false,
+                toolbar: false,
+                modal: true,
+                baseClass: "fancybox-custom-layout",
+                afterShow: function (instance, current) {
+                    console.info('done!');
+                },
+                iframe: {
+                    preload: false
+                }
+            }
+        });
+    }
      function redirect_report(){
       var report_list_id=document.getElementById('report_list').value;
       document.location="<?php echo $this->request->getAttribute('webroot'); ?>Reports/add_report_main/"+report_list_id;    
@@ -40,7 +49,7 @@
             case'remidialaction':
             document.location="<?php echo $this->request->getAttribute('webroot'); ?>Reports/report_hsse_remidial_list/<?php echo $this->getRequest()->getParam('pass.0'); ?>";  
             break;
-	    case'remidialemail':
+	        case'remidialemail':
             document.location="<?php echo $this->request->getAttribute('webroot'); ?>Reports/hsse_remedila_email_list/<?php echo $this->getRequest()->getParam('pass.0'); ?>";  
             break;
             case 'dataanalysis':
@@ -49,7 +58,7 @@
             case'attachment':
             document.location="<?php echo $this->request->getAttribute('webroot'); ?>Reports/report_hsse_attachment_list/<?php echo $this->getRequest()->getParam('pass.0'); ?>";
             break;
-	    case'link':
+	        case'link':
             document.location="<?php echo $this->request->getAttribute('webroot'); ?>Reports/report_hsse_link_list/<?php echo $this->getRequest()->getParam('pass.0'); ?>/<?php echo base64_encode('all'); ?>";
             break;
             case'clientfeedback':
@@ -66,20 +75,26 @@
     <?php
         $session = $this->request->getSession();
         $reportCreate = $session->read('report_create');
+        $adminData = $session->read('adminData');
         $adminId = $session->read('admin_id');
         $clientTab = $session->read('clienttab');
         $clientFeedback = $client_feedback ?? 0;
+        $adminMasterId = $adminData['id'];
+        $roleMasterId = $adminData['role_master']['id'];
         // echo '<pre>';
         // echo "reportCreate = "; var_dump($reportCreate);
         // echo "adminId = "; var_dump($adminId);
+        // echo "adminData = "; var_dump($adminData);
         // echo "clientTab = "; var_dump($clientTab);
+        // echo "adminMasterId = "; var_dump($adminMasterId);
+        // echo "roleMasterId = "; var_dump($roleMasterId);
         // echo '</pre>';
     ?>
     <div class="tabspanel">
         <ul>
             <?php
                 //$roleId = $session->read('admin_role_id');debug($roleId);
-              if (true || $reportCreate == $adminId || $adminId == 1){
+              if (($reportCreate == $adminData['id']) || ($adminData['role_master']['id'] == 1)){
             ?>
             <li><a href="javascript:void(0);" id="main" class="selectedtab" onclick="change_dirction('main');">Main</a></li>
             <?php if ($clientTab != 10): ?>
@@ -89,7 +104,7 @@
             <li><a href="javascript:void(0);" id="incident" onclick="change_dirction('incident');">Incident</a></li>
             <li><a href="javascript:void(0);" id="investigation" onclick="change_dirction('investigation');">Investigation</a></li>
             <li><a href="javascript:void(0);" id="remidialaction" onclick="change_dirction('remidialaction');">Remedial Action</a></li>
-            <?php if ($adminId == 1): ?>
+            <?php if ($roleMasterId == 1): ?>
                 <li><a href="javascript:void(0);" id="remidialemail" onclick="change_dirction('remidialemail');">Remedial Action Email</a></li>
             <?php endif; ?>
             <li><a href="javascript:void(0);" id="investigationdata" onclick="change_dirction('dataanalysis');">Incident Investigation</a></li>

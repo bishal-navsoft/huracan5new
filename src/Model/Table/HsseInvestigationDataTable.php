@@ -13,13 +13,19 @@ class HsseInvestigationDataTable extends Table
         $this->setTable('hsse_investigation_datas');
         $this->setPrimaryKey('id');
 
-        // Timestamp behavior for created & modified
         $this->addBehavior('Timestamp');
 
-        // Relationship: each investigation data belongs to one investigation
+        // Relation: InvestigationData belongs to HsseInvestigation
         $this->belongsTo('HsseInvestigation', [
             'foreignKey' => 'report_id',
             'joinType' => 'INNER',
+        ]);
+
+        // Relation: InvestigationData belongs to HsseIncident
+        $this->belongsTo('HsseIncident', [
+            'className' => 'HsseIncident',
+            'foreignKey' => 'incident_id',
+            'joinType' => 'LEFT',
         ]);
     }
 

@@ -292,7 +292,7 @@ class AppController extends Controller
     public function hsse_client_tab($encodedId = null)
     {
         $id = base64_decode((string)$encodedId);
-        $this->loadModel('Reports');
+        $this->Reports = $this->fetchTable('Reports');
         $clientTab = $this->Reports->find()->where(['id' => $id])->first();
         if ($clientTab) {
             $this->request->getSession()->write('clienttab', $clientTab->client);
