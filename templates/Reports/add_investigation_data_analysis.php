@@ -460,7 +460,7 @@
 						'type'  => 'text',
 						'id'    => 'comments',
 						'name'  => 'comments',
-						'value' => $comments ?? '', // ✅ Prevents undefined variable
+						'value' => $comments ?? '', 
 						'label' => false,
 						'div'   => false
 					]);

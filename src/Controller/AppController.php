@@ -398,7 +398,8 @@ class AppController extends Controller
             'application/vnd.ms-excel', 'application/msword',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'application/vnd.oasis.opendocument.text', 'application/vnd.oasis.opendocument.spreadsheet',
-            'application/vnd.oasis.opendocument.presentation'
+            'application/vnd.oasis.opendocument.presentation','application/vnd.ms-powerpoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation'
         ];
     }
 
@@ -407,19 +408,18 @@ class AppController extends Controller
         $file_type_array = ['pdf', 'xlsx', 'xls', 'doc', 'docx', 'odt', 'ods', 'odp'];
         $filetype1 = explode('.', $filename);
         $filetype = strtolower(end($filetype1));
-
         $webroot = $this->request->getAttribute('webroot');
         if (in_array($filetype, $file_type_array, true)) {
-            $path = $webroot . 'img/file_upload/' . $attchmentdetail[0][$modelName]['file_name'];
-            $imagepath = '<span id=' . $attchmentdetail[0][$modelName]['file_name'] . '><a href=' . $path . ' >' . $attchmentdetail[0][$modelName]['file_name'] . '</a></span><br/>';
+            $path = $webroot . 'img/file_upload/' . $attchmentdetail['file_name'];
+            $imagepath = '<span id=' . $attchmentdetail['file_name'] . '><a href=' . $path . ' >' . $attchmentdetail['file_name'] . '</a></span><br/>';
         } else {
-            $path = $webroot . 'img/file_upload/' . $attchmentdetail[0][$modelName]['file_name'];
-            $imagepath = '<span id=' . $attchmentdetail[0][$modelName]['file_name'] . ' class="picupload"><img src=' . $path . ' height="80" width="80" /></span>';
+            $path = $webroot . 'img/file_upload/' . $attchmentdetail['file_name'];
+            $imagepath = '<span id=' . $attchmentdetail['file_name'] . ' class="picupload"><img src=' . $path . ' height="80" width="80" /></span>';
         }
         return $imagepath;
     }
 
-    public function attachment_list($modleName, $rec)
+    /*public function attachment_list($modleName, $rec)
     {
         $filetext1 = explode('.', $rec[$modleName]['file_name']);
         $filetext = strtolower(end($filetext1));
@@ -446,7 +446,54 @@ class AppController extends Controller
                 break;
         }
         return $fileSRC;
+    }*/
+    public function attachment_list($modelName, $rec)
+    {
+        // Works with both array and entity object
+        if (is_array($rec)) {
+            $fileName = $rec['file_name'] ?? null;
+        } else {
+            $fileName = $rec->file_name ?? null;
+        }
+
+        if (empty($fileName)) {
+            return ''; // No file, no image
+        }
+
+        $fileParts = explode('.', $fileName);
+        $fileExt = strtolower(end($fileParts));
+        $webroot = $this->request->getAttribute('webroot');
+
+        switch ($fileExt) {
+            case 'pdf':
+                $icon = 'pdf.jpeg';
+                break;
+            case 'xlsx':
+            case 'xls':
+            case 'xlsm':
+            case 'ppt':
+            case 'pptx':
+                $icon = 'excel.jpeg';
+                break;
+            case 'doc':
+            case 'docx':
+            case 'odt':
+            case 'ods':
+            case 'odp':
+                $icon = 'doc.jpeg';
+                break;
+            default:
+                return '<a href="' . $webroot . 'resize.php?src=img/file_upload/' . $fileName .
+                    '&w=300&h=300" target="_blank"><img src="' . $webroot .
+                    'img/file_upload/' . $fileName . '" height="80" width="80"></a>';
+        }
+
+        return '<a href="' . $webroot . 'img/file_upload/' . $fileName .
+            '"><img src="' . $webroot . 'img/file_upload/' . $icon .
+            '" height="80" width="80"></a>';
     }
+
+
 
     public function link_grid($adminA, $link_type, $modelName, $rec)
     {
@@ -531,39 +578,73 @@ class AppController extends Controller
         return ($link_report_no ?? '') . '~' . ($type ?? '');
     }
 
-    public function upload_image_func($upparname, $contr, $allowed_image)
+    public function upload_image_func($upparname, $contr, $allowed_image): void
     {
-        // Minimal migration: keep similar behaviour but adapt to Cake3 request
+        $this->autoRender = false;
+        $this->response = $this->response->withType('json');
+
         $data = $this->request->getData();
+        $webroot = $this->request->getAttribute('webroot');
         $filepath = WWW_ROOT . 'img' . DIRECTORY_SEPARATOR . 'file_upload' . DIRECTORY_SEPARATOR;
 
+        // Ensure upload folder exists
+        if (!is_dir($filepath)) {
+            mkdir($filepath, 0775, true);
+        }
+
+        // === Handle Upload ===
         if ($upparname === 'upload') {
-            if (empty($data[$contr]['file_upload']['name'])) {
-                echo "<script>parent.document.getElementById('image_upload_res').innerHTML='<font style=\"color:red\">No file provided</font>';</script>";
+            $fileData = $_FILES['file_upload'] ?? ($data[$contr]['file_upload'] ?? null);
+
+            if (empty($fileData['name'])) {
+                echo json_encode(['status' => 'error', 'message' => 'No file provided']);
                 return;
             }
-            $replacech = [' '];
-            $replaceby = ['_'];
-            $newFN = str_replace($replacech, $replaceby, $data[$contr]['file_upload']['name']);
-            $fileName = time() . '_' . $newFN;
-            $imagetype = $data[$contr]['file_upload']['type'];
 
-            if (in_array($imagetype, $allowed_image, true)) {
-                if (move_uploaded_file($data[$contr]['file_upload']['tmp_name'], $filepath . $fileName)) {
-                    $iamgepath = $this->request->getAttribute('webroot') . 'img/file_upload/' . $fileName;
-                    // Very small inline JS to match original behaviour
-                    echo "<script language='javascript' type=\"text/javascript\">parent.document.getElementById('image_upload_res').innerHTML='<font style=\"color:green;\">Uploaded successfully</font>'; parent.document.getElementById('displayFile').style.display='block'; parent.document.getElementById('del').style.display='block'; parent.document.getElementById('displayFile').innerHTML='<span id=\"{$fileName}\"><a href=\"{$iamgepath}\">{$fileName}</a></span>'; parent.document.getElementById('hiddenFile').value='{$fileName}';</script>";
+            $originalName = str_replace(' ', '_', $fileData['name']);
+            $fileName = time() . '_' . $originalName;
+            $tmpPath = $fileData['tmp_name'];
+            $mimeType = $fileData['type'];
+
+            // Validate allowed MIME type
+            if (!in_array($mimeType, $allowed_image, true)) {
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Invalid file type. Allowed types: jpeg, png, jpg, gif, xlsx, xls, doc, docx, odt, ods, ppt, pptx, css.'
+                ]);
+                return;
+            }
+
+            // Move file safely
+            if (move_uploaded_file($tmpPath, $filepath . $fileName)) {
+                $imageUrl = $webroot . 'img/file_upload/' . $fileName;
+                echo json_encode([
+                    'status' => 'success',
+                    'message' => 'Uploaded successfully',
+                    'filename' => $fileName,
+                    'file_url' => $imageUrl
+                ]);
+            } else {
+                echo json_encode(['status' => 'error', 'message' => 'Failed to upload file']);
+            }
+        }
+
+        // === Handle Delete ===
+        elseif ($upparname === 'delete') {
+            $deleteImageName = $this->request->getParam('pass.0') ?? null;
+            if ($deleteImageName) {
+                $deleteFilePath = $filepath . basename(urldecode($deleteImageName));
+                if (file_exists($deleteFilePath)) {
+                    unlink($deleteFilePath);
+                    echo json_encode([
+                        'status' => 'success',
+                        'message' => 'File deleted successfully'
+                    ]);
+                } else {
+                    echo json_encode(['status' => 'error', 'message' => 'File not found']);
                 }
             } else {
-                echo "<script language='javascript' type=\"text/javascript\"> parent.document.getElementById('displayFile').innerHTML=''; parent.document.getElementById('image_upload_res').innerHTML='<font style=\"color:red\">Only jpeg, png, jpg,gif,xlsx,xls,Doc,Docx,Odt,Ods files are allowed to upload</font>'; parent.document.getElementById('del').style.display='none';</script>";
-            }
-        } elseif ($upparname === 'delete') {
-            // deletion logic: expects $deleteImageName in scope in original; keep minimal
-            // WARNING: path handling must be secure in production
-            if (!empty($_GET['delete'])) {
-                $deleteImageName = $_GET['delete'];
-                @unlink(WWW_ROOT . 'img' . DIRECTORY_SEPARATOR . 'file_upload' . DIRECTORY_SEPARATOR . urldecode($deleteImageName));
-                echo "<script language='javascript' type=\"text/javascript\"> parent.document.getElementById('hiddenFile').value=''; parent.document.getElementById('image_upload_res').innerHTML='<font style=\"color:green\">File deleted successfully</font>'; </script>";
+                echo json_encode(['status' => 'error', 'message' => 'No file specified']);
             }
         }
     }
@@ -571,13 +652,28 @@ class AppController extends Controller
     public function derive_link_data($userDeatil)
     {
         $reportDeatil = [];
-        // Input expected in Cake2 structure; attempt to handle arrays/objects
-        if (!empty($userDeatil[0]['Report'])) {
-            foreach ($userDeatil[0]['Report'] as $i => $rep) {
-                $reportDeatil['Report'][$i]['report_name'][] = $rep['report_no'] ?? ($rep->report_no ?? null);
-                $reportDeatil['Report'][$i]['type'][] = 'Hsse Report';
-                $reportDeatil['Report'][$i]['id'][] = $rep['id'] ?? ($rep->id ?? null);
-                $reportDeatil['Report'][$i]['summary'][] = $rep['summary'] ?? null;
+            if (empty($userDetail) || !is_iterable($userDetail)) {
+            return $reportDeatil;
+        }
+
+        // Normalize ResultSet to array
+        $userDetail = ($userDetail instanceof \Cake\ORM\ResultSet)
+            ? $userDetail->toArray()
+            : (array)$userDetail;
+
+        if (empty($userDetail[0])) {
+            return $reportDeatil;
+        }
+
+        $first = (array)$userDetail[0];
+        
+        // Ensure there's at least one user
+        if (!empty($userDetail) && !empty($userDetail[0]->reports)) {
+            foreach ($userDetail[0]->reports as $i => $rep) {
+                $reportDetail['Report'][$i]['report_name'][] = $rep->report_no ?? null;
+                $reportDetail['Report'][$i]['type'][] = 'Hsse Report';
+                $reportDetail['Report'][$i]['id'][] = $rep->id ?? null;
+                $reportDeatil['Report'][$i]['summary'][] = $rep->summary ?? null;
             }
         }
 
@@ -592,13 +688,35 @@ class AppController extends Controller
             'JhaMain' => ['key' => 'JhaMain', 'label' => 'Job Hazard Analysis Report', 'summary_field' => 'summary'],
         ];
 
+        if ($userDeatil instanceof \Cake\ORM\ResultSet) {
+            $userDeatil = $userDeatil->toArray();
+        }
+
+        if (!empty($userDeatil) && is_object($userDeatil[0])) {
+            $userDeatil[0] = $userDeatil[0]->toArray();
+        }
+
         foreach ($mapTables as $tbl => $cfg) {
             if (!empty($userDeatil[0][$cfg['key']])) {
-                foreach ($userDeatil[0][$cfg['key']] as $i => $row) {
-                    $reportDeatil[$cfg['key']][$i]['report_name'][] = $row[$cfg['name_field'] ?? 'report_no'] ?? ($row->report_no ?? null);
+                $rows = $userDeatil[0][$cfg['key']];
+
+                // Convert nested ResultSet to array too
+                if ($rows instanceof \Cake\ORM\ResultSet) {
+                    $rows = $rows->toArray();
+                }
+
+                foreach ($rows as $i => $row) {
+                    // Support both array & entity access
+                    $reportDeatil[$cfg['key']][$i]['report_name'][] =
+                        $row[$cfg['name_field'] ?? 'report_no'] ?? ($row->report_no ?? null);
+
                     $reportDeatil[$cfg['key']][$i]['type'][] = $cfg['label'];
-                    $reportDeatil[$cfg['key']][$i]['id'][] = $row['id'] ?? ($row->id ?? null);
-                    $reportDeatil[$cfg['key']][$i]['summary'][] = $row[$cfg['summary_field']] ?? null;
+
+                    $reportDeatil[$cfg['key']][$i]['id'][] =
+                        $row['id'] ?? ($row->id ?? null);
+
+                    $reportDeatil[$cfg['key']][$i]['summary'][] =
+                        $row[$cfg['summary_field'] ?? 'summary'] ?? ($row->summary ?? null);
                 }
             }
         }

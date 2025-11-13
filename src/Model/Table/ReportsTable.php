@@ -21,21 +21,20 @@ class ReportsTable extends Table
 
         // Associations
         $this->belongsTo('IncidentSeverities', [
-            'className' => 'App\Model\Table\IncidentSeverityTable',
+            'className' => 'IncidentSeverity',
             'foreignKey' => 'incident_severity',
             'joinType' => 'LEFT',
-            'propertyName' => 'incident_severity_data',
+            'propertyName' => 'incident_severity',
         ]);
 
         $this->belongsTo('Clients', [
-            'className' => 'App\Model\Table\ClientTable',
+            'className' => 'Client',
             'foreignKey' => 'client', 
             'joinType' => 'LEFT',
-            'propertyName' => 'client_data',
+            'propertyName' => 'client',
         ]);
 
         $this->belongsTo('AdminMasters', [
-            'className' => 'App\Model\Table\AdminMastersTable',
             'foreignKey' => 'created_by',
             'joinType' => 'LEFT',
         ]);
@@ -70,10 +69,11 @@ class ReportsTable extends Table
             'joinType' => 'LEFT',
         ]);
 
-        $this->belongsTo('HsseRemidials', [
-            'className' => 'App\Model\Table\HsseRemidialTable',
-            'foreignKey' => 'report_no',
+        $this->hasMany('HsseRemidials', [
+            'className' => 'HsseRemidial',
+            'foreignKey' => 'report_no', // check your DB structure
             'bindingKey' => 'id',
+            'joinType' => 'LEFT',
         ]);
 
         $this->hasMany('HsseClients', [

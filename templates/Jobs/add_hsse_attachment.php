@@ -1,96 +1,71 @@
- <script language="javascript" type="text/javascript">
-function confirmFun(me)
+<script language="javascript" type="text/javascript">
+	function confirmFun(me)
     {
-	  var imagename=$('#hiddenFile').val();
-	  if(confirm("Do You Want To Delete?"))
-	  {
-	       var rootpath = '<?php echo $this->webroot;?>';
-	       $('#loaderRes').html('<br /><img src='+rootpath+'/app/webroot/img/ajax-loader.gif>');
-	       var  uploadPath = rootpath+'Reports/uploadimage/delete/'+encodeURIComponent(imagename);
-	       document.getElementById('file_upload').innerHTML='';
-	       document.add_report_attachment_form.action =uploadPath;
-	       document.add_report_attachment_form.target = "imgFrame";
-	       document.add_report_attachment_form.submit();
-	       return true;
-	  }
-	  else
-	  {
-	       me.checked = false;
-	       return false;
-	  }
-     }
-function uploadFile()
-     {
-	  var rootpath = '<?php echo $this->webroot;?>';
-	  $('#loaderRes').html('<br /><img src='+rootpath+'/app/webroot/img/ajax-loader.gif>');
-	  var  uploadPath = rootpath+'Reports/uploadimage/upload';
-	  document.add_report_attachment_form.action =uploadPath;
-	  document.add_report_attachment_form.target = "imgFrame";
-	  document.add_report_attachment_form.submit();
-     }
-
-
-	     
-function add_hsse_attach()
-{
-             
-            var attachment_description = jQuery.trim(document.getElementById('attachment_description').value);
-            var file_name = jQuery.trim(document.getElementById('hiddenFile').value);
-	    var report_id ='<?php echo $report_id;?>';
-            
-	    if(attachment_description==''){
+	  	var imagename=$('#hiddenFile').val();
+		if(confirm("Do You Want To Delete?"))
+		{
+			var rootpath = '<?php echo $this->webroot;?>';
+			$('#loaderRes').html('<br /><img src='+rootpath+'/app/webroot/img/ajax-loader.gif>');
+			var  uploadPath = rootpath+'Reports/uploadimage/delete/'+encodeURIComponent(imagename);
+			document.getElementById('file_upload').innerHTML='';
+			document.add_report_attachment_form.action =uploadPath;
+			document.add_report_attachment_form.target = "imgFrame";
+			document.add_report_attachment_form.submit();
+			return true;
+	  	}
+		else
+		{
+			me.checked = false;
+			return false;
+	  	}
+    }
+	function uploadFile()
+	{
+		var rootpath = '<?php echo $this->webroot;?>';
+		$('#loaderRes').html('<br /><img src='+rootpath+'/app/webroot/img/ajax-loader.gif>');
+		var  uploadPath = rootpath+'Reports/uploadimage/upload';
+		document.add_report_attachment_form.action =uploadPath;
+		document.add_report_attachment_form.target = "imgFrame";
+		document.add_report_attachment_form.submit();
+	}
+ 
+	function add_hsse_attach()
+	{
+        var attachment_description = jQuery.trim(document.getElementById('attachment_description').value);
+		var file_name = jQuery.trim(document.getElementById('hiddenFile').value);
+		var report_id ='<?php echo $report_id;?>';
+        if(attachment_description==''){
 	        document.getElementById('description_error').innerHTML='Enter description';
-		document.getElementById('attachment_description').focus();
-		return false;
-		
-	    }
+			document.getElementById('attachment_description').focus();
+			return false;
+		}
 	    if(file_name==''){
 	        document.getElementById('image_upload_res').innerHTML='Please upload file';
-		
-		return false;
-		
-	    }
-            var dataStr = $("#add_report_attachment_form").serialize();
-	       
-            var rootpath='<?php echo $this->webroot ?>';
+			return false;
+		}
+        var dataStr = $("#add_report_attachment_form").serialize();
+	    var rootpath='<?php echo $this->webroot ?>';
 	    document.getElementById('loader').innerHTML='<img src="<?php echo $this->webroot; ?>img/loader.gif" />';	
-              
-	      
-	       $.ajax({
-			  type: "POST",
-			  url: rootpath+"Reports/hsseattachmentprocess/",
-			  data:"data="+dataStr+"&report_id="+report_id,
-			  success: function(res)
-			  {
-			 
-				  
-			if(res=='fail'){
-				   document.getElementById('loader').innerHTML='<font color="red">Please try again</font>';  
-	                     }else if(res=='add'){
-				   document.getElementById('loader').innerHTML='<font color="green">Attachment  Data Added Successfully</font>';
-				   document.location='<?php echo $this->webroot; ?>Reports/report_hsse_attachment_list/<?php echo base64_encode($report_id); ?>';
-			     }else if(res=='update'){
-				   document.getElementById('loader').innerHTML='<font color="green">Attachment Data Update Successfully</font>';
-				   document.location='<?php echo $this->webroot; ?>Reports/report_hsse_attachment_list/<?php echo base64_encode($report_id); ?>';
-				   
-                             }
-                         
-                             
-                             
-                             
-                 }
-		 
-	});
-	
-
-	return false;
- 
-}
-
-
-
- 
- </script>
+        $.ajax({
+				type: "POST",
+				url: rootpath+"Reports/hsseattachmentprocess/",
+				data:"data="+dataStr+"&report_id="+report_id,
+				success: function(res)
+				{
+					if(res=='fail'){
+				   		document.getElementById('loader').innerHTML='<font color="red">Please try again</font>';  
+	                }else if(res=='add'){
+						document.getElementById('loader').innerHTML='<font color="green">Attachment  Data Added Successfully</font>';
+						document.location='<?php echo $this->webroot; ?>Reports/report_hsse_attachment_list/<?php echo base64_encode($report_id); ?>';
+			     	}else if(res=='update'){
+						document.getElementById('loader').innerHTML='<font color="green">Attachment Data Update Successfully</font>';
+						document.location='<?php echo $this->webroot; ?>Reports/report_hsse_attachment_list/<?php echo base64_encode($report_id); ?>';
+				   	}
+                }
+		});
+		return false;
+	}
+</script>
  
  <div class="wrapall">
 <aside>

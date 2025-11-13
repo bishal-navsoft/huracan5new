@@ -1,25 +1,24 @@
 Ext.onReady(function(){
 // CUSTOM FUNCTIONS //
 
-function onFilterItemCheck(item, checked){
+	function onFilterItemCheck(item, checked){
         if(checked) {
             Ext.get('filterlabel').update('['+item.text+']');    
         }
     }
 
-//Function for unblock selected records
-function delete_attachment(id){
-	
-	$.ajax({
-			  type: "POST",
-			  url: path+"Reports/attachment_delete/",
-			  data:"data=a&id="+id,
-			  success: function(res)
-			  {
+	//Function for unblock selected records
+	function delete_attachment(id){
+		$.ajax({
+			type: "POST",
+			url: path+"Reports/attachment_delete/",
+			data:"data=a&id="+id,
+			success: function(res)
+			{
 		
-			   if(res=='ok'){
+			if(res=='ok'){
 				document.location=path+'Reports/report_hsse_attachment_list/'+root_param;
-			   }
+			}
 				
 	                 }
 		 
@@ -233,21 +232,21 @@ function deleteSelected()
 var ds = new Ext.data.Store({	
         proxy: new Ext.data.HttpProxy({url: AdminListPage+'Reports/get_all_attachment_list/'+report_id}),  //note that I used host in the url
         reader: new Ext.data.JsonReader({
-        root: 'admins',
-	totalProperty: 'total',
-        remoteSort: true,
-		fields: [
-          {name: 'id'},
-	  {name: 'report_id'},
-	  {name: 'file_name'},
-	  {name: 'image_src'},
-	  {name: 'description'},
-	  {name: 'isblocked'},
-	  {name: 'blockHideIndex', type: 'boolean'},
-	  {name: 'unblockHideIndex', type: 'boolean'},
-	  {name: 'isdeletdHideIndex', type: 'boolean'},
-	]
-	})
+			root: 'admins',
+			totalProperty: 'total',
+			remoteSort: true,
+			fields: [
+				{name: 'id'},
+				{name: 'report_id'},
+				{name: 'file_name'},
+				{name: 'image_src'},
+				{name: 'description'},
+				{name: 'isblocked'},
+				{name: 'blockHideIndex', type: 'boolean'},
+				{name: 'unblockHideIndex', type: 'boolean'},
+				{name: 'isdeletdHideIndex', type: 'boolean'},
+			]
+		})
     });  
 	
 	var pagingBar = new Ext.PagingToolbar({
@@ -275,7 +274,8 @@ var ds = new Ext.data.Store({
 						if(is_edit == 1)
 						{
 							//location.href = path+"Users/add_mobilesite/"+records['data']['id']+"/";
-							location.href = path+"Reports/add_hsse_attachment/"+Base64.encode(records['data']['report_id'])+"/"+Base64.encode(records['data']['id']);
+							console.log(records['data']['id']);
+							location.href = path+"Reports/add_hsse_attachment/"+Base64.encode(String(records['data']['report_id']))+"/"+Base64.encode(String(records['data']['id']));
 						}
 						else
 						{
@@ -362,8 +362,7 @@ var ds = new Ext.data.Store({
 								Ext.Ajax.request(
 								{
 									 url: path+'Reports/attachment_block/'+records['data']['id']+'/'
-									 ,method:'GET'
-   //,params:{id:record.data.id,con:'games',act:'movetoup'}
+									 ,method:'GET'   //,params:{id:record.data.id,con:'games',act:'movetoup'}
 									,success: function(response){
 										ds.reload();
 										box.hide();

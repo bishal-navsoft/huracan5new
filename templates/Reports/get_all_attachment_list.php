@@ -1,4 +1,7 @@
 <?php 
-	//echo '<pre>'; print_r($admins); echo '</pre>';
-	echo '{"total":'.$total.', "admins":'.$this->Js->Object($admins).'}';
+    // Convert to modern CakePHP style
+    echo json_encode([
+        'total' => $count,
+        'admins' => $adminArray
+    ]);
 ?>

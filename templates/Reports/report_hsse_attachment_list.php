@@ -1,5 +1,6 @@
 <?php $webroot = $this->request->getAttribute('webroot');?>
 <script language="JavaScript" type="text/javascript">
+var csrfToken = <?= json_encode($this->request->getAttribute('csrfToken')) ?>;
 var action = "<?php echo $action;?>";
 var path = "<?php echo $webroot;?>";
 var AdminListPage = "<?php echo 'http://'.$_SERVER['HTTP_HOST'].$webroot; ?>";
@@ -10,7 +11,6 @@ var is_block = "<?php echo $is_block; ?>";
 var is_delete = "<?php echo $is_delete; ?>";
 var root_param ='<?php echo $this->Params->pass(0); ?>';
 var pagelmt = "<?php if($limit=='all'){ echo '1000';}else{ echo $limit; }?>";
-
 var activate_selected = "<?php echo __('Activate');?>";
 var deactivate_selected = "<?php echo __('Deactivate');?>";
 var delete_selected = "<?php echo __('Delete');?>";
@@ -23,7 +23,6 @@ var edt = "<?php echo __('Edit');?>";
 var activ = "<?php echo __('Activate');?>";
 var deactiv = "<?php echo __('Deactivate');?>";
 var view = "<?php echo __('View');?>";
-
 var dlt = "<?php echo __('Delete');?>";
 var activ_select_record = "<?php echo __('Activate selected record(s)');?>";
 var deactiv_select_record = "<?php echo __('Deactivate selected record(s)');?>";
@@ -61,6 +60,17 @@ var report_summary_no = "<?php echo __('Report no/Report Summary');?>";
 var act = "<?php echo __('Active');?>";
 var inact = "<?php echo __('Inactive');?>";
 var login_history = "<?php echo __('Login History');?>";
+if (typeof $ !== 'undefined' && $.ajaxSetup) {
+      $.ajaxSetup({
+         headers: { 'X-CSRF-Token': csrfToken }
+      });
+}
+
+if (typeof Ext !== 'undefined' && Ext.Ajax) {
+   Ext.Ajax.defaultHeaders = {
+      'X-CSRF-Token': csrfToken
+   };
+}
 </script>
 <aside>
 <?php echo $this->Element('left_menu'); ?>

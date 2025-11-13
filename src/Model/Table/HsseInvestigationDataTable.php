@@ -29,6 +29,9 @@ class HsseInvestigationDataTable extends Table
         ]);
     }
 
+
+
+
     public function validationDefault(Validator $validator): Validator
     {
         $validator
